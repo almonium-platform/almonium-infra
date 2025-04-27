@@ -5,7 +5,7 @@
 set -euo pipefail
 IMAGE_TAG="$1"
 
-ROOT=/home/almonium/deploy            # adjust if different
+ROOT=/home/almonium/infra
 COLOR_FILE="$ROOT/.next_color"
 CURRENT_LINK="$ROOT/current"
 
