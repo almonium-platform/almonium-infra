@@ -16,6 +16,8 @@ services:
       interval: 10s
       timeout: 3s
       retries: 3
+    volumes:
+      - /home/almonium/secrets/service-account.json:/app/service-account.json:ro
 
 networks:
   broker-net:
