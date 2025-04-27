@@ -12,7 +12,7 @@ services:
     ports:
       - "${PORT}:9998"
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9998/actuator/health" ]
+      test: [ "CMD", "curl", "-f", "http://localhost:9998/api/v1/actuator/health" ]
       interval: 10s
       timeout: 3s
       retries: 3
