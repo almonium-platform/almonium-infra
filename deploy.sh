@@ -25,7 +25,7 @@ docker compose pull
 docker compose up -d --remove-orphans
 
 echo "🩺 Waiting for container health..."
-until curl -sf "http://127.0.0.1:${PORT}/actuator/health" | grep -q '"status":"UP"' ; do
+until curl -sf "http://127.0.0.1:${PORT}/api/v1/actuator/health" | grep -q '"status":"UP"' ; do
   sleep 2
 done
 
