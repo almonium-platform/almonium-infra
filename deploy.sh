@@ -39,6 +39,6 @@ echo $([[ "$NEXT" == blue ]] && echo green || echo blue) > "$COLOR_FILE"
 
 # Optionally stop previous colour
 PREV=$([[ "$NEXT" == blue ]] && echo green || echo blue)
-docker compose -p "$PREV" -f "$ROOT/$PREV/docker-compose.yml" down --remove-orphans || true
+docker compose -p "$PREV" -f "$ROOT/$PREV/docker-compose.yaml" down --remove-orphans || true
 
 echo "✅ Deploy finished"
