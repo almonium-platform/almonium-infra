@@ -1,0 +1,19 @@
+name: Deploy RabbitMQ Service
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy_rabbitmq:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy RabbitMQ
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.CLOUD_HOST }}
+          username: ${{ secrets.CLOUD_USERNAME }}
+          key: ${{ secrets.CLOUD_KEY }}
+          script: |
+            cd /home/almonium/infra/rabbitmq
+            export RABBITMQ_USER="${{ secrets.RABBITMQ_USER }}"
+            export RABBITMQ_PASS="${{ secrets.RABBITMQ_PASS }}"
+            docker compose up -d --remove-orphans
