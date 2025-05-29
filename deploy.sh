@@ -103,14 +103,15 @@ until curl -sf "http://127.0.0.1:${HOST_PORT}/api/v1/actuator/health" 2>/dev/nul
 done
 echo "✅ Container for $DEPLOY_SLOT is healthy."
 
-# Atomically swap Nginx upstream
-# This assumes Nginx is configured to read from a file/path identified by $CURRENT_LINK
-# or that $CURRENT_LINK itself being 'blue' or 'green' influences a map directive.
-# Example: Nginx might include $CURRENT_LINK/nginx.conf or similar.
-# $(pwd) is $TARGET_DIR which is $ROOT/$DEPLOY_SLOT
-ln -sfn "$TARGET_DIR_FOR_OTHER_FILES" "$CURRENT_LINK" # $TARGET_DIR_FOR_OTHER_FILES is $ROOT/$DEPLOY_SLOT
+# In deploy.sh, after health check passes and before nginx reload:
+ACTIVE_UPSTREAM_CONF_FILE="$ROOT/active_upstream.conf" # $ROOT is /home/almonium/infra
+echo "Writing active upstream to $ACTIVE_UPSTREAM_CONF_FILE for port $HOST_PORT"
+echo "server 127.0.0.1:${HOST_PORT};" > "$ACTIVE_UPSTREAM_CONF_FILE"
+# Optional: Add keepalive or other upstream directives if desired
+echo "keepalive 32;" >> "$ACTIVE_UPSTREAM_CONF_FILE"
+
 sudo nginx -s reload
-echo "🔀 Traffic switched to $DEPLOY_SLOT"
+echo "🔀 Traffic switched to $DEPLOY_SLOT (port $HOST_PORT via $ACTIVE_UPSTREAM_CONF_FILE)"
 
 # Flip the colour for the next deploy
 NEXT_DEPLOY_SLOT=$([[ "$DEPLOY_SLOT" == "blue" ]] && echo "green" || echo "blue")
