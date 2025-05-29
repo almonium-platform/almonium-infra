@@ -1,0 +1,23 @@
+name: Auto Update Infra on Server
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: SSH deploy (git pull infra)
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.CLOUD_HOST }}
+          username: ${{ secrets.CLOUD_USERNAME }}
+          key: ${{ secrets.CLOUD_KEY }}
+          script: |
+            cd /home/almonium/infra
+            git pull origin main
