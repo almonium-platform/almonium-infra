@@ -2,3 +2,4 @@
 .env
 .next_color
 current
+active_upstream.conf
