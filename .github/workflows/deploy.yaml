@@ -19,4 +19,4 @@ jobs:
           key: ${{ secrets.CLOUD_KEY }}
           script: |
             cd /home/almonium/infra
-            git pull origin main
+            git pull origin master
