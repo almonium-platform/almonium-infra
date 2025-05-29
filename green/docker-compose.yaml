@@ -10,7 +10,7 @@ services:
       # Server Configuration
       LOCAL_PORT: ${LOCAL_PORT}
       DEBUG_PORT: ${DEBUG_PORT}
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILE}
+      SPRING_PROFILE: ${SPRING_PROFILE}
 
       # JWT Configuration
       JWT_SECRET: ${JWT_SECRET}
