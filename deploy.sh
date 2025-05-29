@@ -63,10 +63,11 @@ export MAIL_PASSWORD="${CONF_MAIL_PASSWORD:?CONF_MAIL_PASSWORD not set}"
 # --- Blue/Green Deployment Logic ---
 ROOT="/home/almonium/infra"
 COLOR_FILE="$ROOT/.next_color"
-CURRENT_LINK="$ROOT/current" # Symlink Nginx points to (e.g., to $ROOT/blue or $ROOT/green)
+CURRENT_LINK="$ROOT/current"
+COMPOSE_TEMPLATE_FILE="$ROOT/docker-compose.template.yaml" # Define path to template
 
 # Decide which colour (slot) will be (re)deployed
-export DEPLOY_SLOT=$(cat "$COLOR_FILE" 2>/dev/null || echo "blue") # 'blue' or 'green'
+export DEPLOY_SLOT=$(cat "$COLOR_FILE" 2>/dev/null || echo "blue")
 
 # Determine host port and internal app port for this slot
 export APP_INTERNAL_PORT="9998" # Your Spring Boot app listens on this port INSIDE the container
@@ -76,14 +77,15 @@ else
   export HOST_PORT="9999" # Green exposed on host 9999
 fi
 
-# Export TAG & PORT so compose picks them up
-TARGET_DIR="$ROOT/$DEPLOY_SLOT"
-cd "$TARGET_DIR" # e.g., /home/almonium/infra/blue or /home/almonium/infra/green
+# Note: We don't strictly need to 'cd' into blue/green if we use -f and -p,
+# but 'cd' can be useful if other files in blue/green dirs are needed (like upstream.conf).
+# For docker-compose itself, project name (-p) is key if not relying on directory name.
+TARGET_DIR_FOR_OTHER_FILES="$ROOT/$DEPLOY_SLOT" # Still useful for ln, etc.
 
-echo "👉 Deploying $DEPLOY_SLOT stack (service: app) with image tag $TAG, container host port $HOST_PORT (app internal port $APP_INTERNAL_PORT)"
+echo "👉 Deploying $DEPLOY_SLOT stack (service: app) using template $COMPOSE_TEMPLATE_FILE with image tag $TAG, container host port $HOST_PORT (app internal port $APP_INTERNAL_PORT)"
 
-docker compose pull app
-docker compose up -d --remove-orphans app
+docker compose -p "$DEPLOY_SLOT" -f "$COMPOSE_TEMPLATE_FILE" pull app
+docker compose -p "$DEPLOY_SLOT" -f "$COMPOSE_TEMPLATE_FILE" up -d --remove-orphans app
 
 echo "🩺 Waiting for container health on http://127.0.0.1:${HOST_PORT}/api/v1/actuator/health ..."
 retries=30
@@ -106,8 +108,7 @@ echo "✅ Container for $DEPLOY_SLOT is healthy."
 # or that $CURRENT_LINK itself being 'blue' or 'green' influences a map directive.
 # Example: Nginx might include $CURRENT_LINK/nginx.conf or similar.
 # $(pwd) is $TARGET_DIR which is $ROOT/$DEPLOY_SLOT
-ln -sfn "$TARGET_DIR" "$CURRENT_LINK"
-# Ensure the user running this script (almonium) has NOPASSWD sudo rights for 'nginx -s reload'
+ln -sfn "$TARGET_DIR_FOR_OTHER_FILES" "$CURRENT_LINK" # $TARGET_DIR_FOR_OTHER_FILES is $ROOT/$DEPLOY_SLOT
 sudo nginx -s reload
 echo "🔀 Traffic switched to $DEPLOY_SLOT"
 
@@ -117,14 +118,9 @@ echo "$NEXT_DEPLOY_SLOT" > "$COLOR_FILE"
 
 # Optionally stop previous colour's container(s)
 PREVIOUS_SLOT="$NEXT_DEPLOY_SLOT" # This is the slot that was active *before* this deployment
-PREVIOUS_DIR="$ROOT/$PREVIOUS_SLOT"
 
-if [ -d "$PREVIOUS_DIR" ] && [ -f "$PREVIOUS_DIR/docker-compose.yaml" ]; then
-  echo "Stopping previous slot: $PREVIOUS_SLOT"
-  # Running docker-compose from within the previous slot's directory ensures correct project context.
-  (cd "$PREVIOUS_DIR" && docker compose down --remove-orphans) || echo "Could not stop $PREVIOUS_SLOT, or it was already down. Continuing."
-else
-  echo "No previous slot $PREVIOUS_SLOT directory or compose file found to stop."
-fi
+echo "Stopping previous slot: $PREVIOUS_SLOT"
+# Use -p for the project name and -f for the compose file for 'down' as well
+docker compose -p "$PREVIOUS_SLOT" -f "$COMPOSE_TEMPLATE_FILE" down --remove-orphans || echo "Could not stop $PREVIOUS_SLOT, or it was already down. Continuing."
 
 echo "✅ Deploy of $DEPLOY_SLOT finished successfully."
