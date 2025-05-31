@@ -49,7 +49,7 @@ services:
       - proxy-net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.almonium-com-router.rule=Host(`almonium.com`,`www.almonium.com`)"
+      - "traefik.http.routers.almonium-com-router.rule=Host(`almonium.com`)"
       - "traefik.http.routers.almonium-com-router.entrypoints=websecure"
       - "traefik.http.routers.almonium-com-router.tls.certresolver=porkbun"
       - "traefik.http.services.almonium-com-svc.loadbalancer.server.port=80"
