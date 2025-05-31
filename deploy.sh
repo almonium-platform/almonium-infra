@@ -61,7 +61,7 @@ export MAIL_PASSWORD="${CONF_MAIL_PASSWORD:?CONF_MAIL_PASSWORD not set}"
 # --- Blue/Green Deployment Logic ---
 ROOT="/home/almonium/infra"
 COLOR_FILE="$ROOT/.next_color"
-COMPOSE_TEMPLATE_FILE="$ROOT/docker-compose.template.yaml"
+COMPOSE_TEMPLATE_FILE="$ROOT/almonium-be/docker-compose.template.yaml"
 
 # Decide which colour (slot) will be (re)deployed
 export DEPLOY_SLOT=$(cat "$COLOR_FILE" 2>/dev/null || echo "blue")
