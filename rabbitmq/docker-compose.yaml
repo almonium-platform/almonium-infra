@@ -6,8 +6,8 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
     ports:
-      - "5672:5672"       # AMQP
-      - "15672:15672"     # Management UI
+      - "5672:5672"
+      - "15672:15672"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
@@ -15,6 +15,7 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    restart: unless-stopped
 
 volumes:
   rabbitmq-data:
