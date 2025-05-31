@@ -28,8 +28,8 @@ jobs:
 
             # Make Porkbun API keys available to docker-compose
             # The docker-compose.yaml above refers to these exact names
-            export PORKBUN_API_KEY="${VAR_PORKBUN_API_KEY}"
-            export PORKBUN_SECRET_KEY="${VAR_PORKBUN_SECRET_KEY}"
+            export SHELL_PORKBUN_API_KEY="${VAR_PORKBUN_API_KEY}" 
+            export SHELL_PORKBUN_SECRET_KEY="${VAR_PORKBUN_SECRET_KEY}"
 
             # Create acme.json with correct permissions if it doesn't exist
             if [ ! -f "./acme.json" ]; then

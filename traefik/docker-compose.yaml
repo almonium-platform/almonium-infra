@@ -1,6 +1,6 @@
 services:
   traefik:
-    image: traefik:v2.11 # Use a specific recent version like v2.11 or v3.0
+    image: traefik:latest
     container_name: traefik_proxy
     command:
       - "--api.insecure=true" # For dashboard access locally (127.0.0.1:8080)
@@ -19,8 +19,8 @@ services:
       - "443:443"
       - "127.0.0.1:8080:8080" # Traefik Dashboard - localhost only access
     environment:
-      - PORKBUN_API_KEY=${PORKBUN_API_KEY}
-      - PORKBUN_SECRET_KEY=${PORKBUN_SECRET_KEY}
+      - PORKBUN_API_KEY=${SHELL_PORKBUN_API_KEY}
+      - PORKBUN_SECRET_API_KEY=${SHELL_PORKBUN_SECRET_KEY}
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "./acme.json:/letsencrypt/acme.json"
