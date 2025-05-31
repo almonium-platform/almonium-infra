@@ -14,7 +14,6 @@ services:
       - "--certificatesresolvers.porkbun.acme.email=tech@almonium.com"
       - "--certificatesresolvers.porkbun.acme.storage=/letsencrypt/acme.json"
       - "--certificatesresolvers.porkbun.acme.dnschallenge.provider=porkbun"
-      - "--certificatesresolvers.porkbun.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
     ports:
       - "80:80"
       - "443:443"
