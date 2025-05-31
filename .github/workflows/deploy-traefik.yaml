@@ -24,12 +24,20 @@ jobs:
             VAR_PORKBUN_SECRET_KEY=${{ secrets.PORKBUN_SECRET_KEY }}
           script: |
             echo "Deploying Traefik..."
-            cd /home/almonium/infra/traefik # Or where you cloned almonium-infra/traefik
-
-            # Make Porkbun API keys available to docker-compose
-            # The docker-compose.yaml above refers to these exact names
-            export SHELL_PORKBUN_API_KEY="${VAR_PORKBUN_API_KEY}" 
+            cd /home/almonium/infra/traefik
+            
+            export SHELL_PORKBUN_API_KEY="${VAR_PORKBUN_API_KEY}"
             export SHELL_PORKBUN_SECRET_KEY="${VAR_PORKBUN_SECRET_KEY}"
+            
+            echo "--- DEBUG: Checking Environment Variables ---"
+            echo "Value of VAR_PORKBUN_API_KEY (from GH envs): [${VAR_PORKBUN_API_KEY}]" # Will show as [***] if set
+            echo "Value of VAR_PORKBUN_SECRET_KEY (from GH envs): [${VAR_PORKBUN_SECRET_KEY}]" # Will show as [***] if set
+            echo "Value of SHELL_PORKBUN_API_KEY (exported): [${SHELL_PORKBUN_API_KEY}]" # Will show as [***] if set
+            echo "Value of SHELL_PORKBUN_SECRET_KEY (exported): [${SHELL_PORKBUN_SECRET_KEY}]" # Will show as [***] if set
+            echo "Checking if secrets are empty (should not be true if secrets are set):"
+            [ -z "${VAR_PORKBUN_API_KEY}" ] && echo "VAR_PORKBUN_API_KEY IS EMPTY OR UNSET"
+            [ -z "${VAR_PORKBUN_SECRET_KEY}" ] && echo "VAR_PORKBUN_SECRET_KEY IS EMPTY OR UNSET"
+            echo "--- END DEBUG ---"
 
             # Create acme.json with correct permissions if it doesn't exist
             if [ ! -f "./acme.json" ]; then
@@ -37,6 +45,6 @@ jobs:
               chmod 600 ./acme.json
             fi
 
-            docker compose pull traefik # Pull the specified image version
+            docker compose pull traefik
             docker compose up -d --remove-orphans
             echo "Traefik deployment attempted."
