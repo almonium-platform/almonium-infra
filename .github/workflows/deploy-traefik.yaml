@@ -38,5 +38,5 @@ jobs:
             fi
 
             docker compose pull traefik # Pull the specified image version
-            docker compose up -d --remove-orphans traefik
+            docker compose up -d --remove-orphans
             echo "Traefik deployment attempted."
