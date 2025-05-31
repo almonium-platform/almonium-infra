@@ -20,16 +20,16 @@ jobs:
           username: ${{ secrets.CLOUD_USERNAME }}
           key: ${{ secrets.CLOUD_KEY }}
           envs: |
-            PORKBUN_API_KEY_FROM_GH_SECRET=${{ secrets.PORKBUN_API_KEY }}
-            PORKBUN_SECRET_KEY_FROM_GH_SECRET=${{ secrets.PORKBUN_SECRET_KEY }}
+            VAR_PORKBUN_API_KEY=${{ secrets.PORKBUN_API_KEY }}
+            VAR_PORKBUN_SECRET_KEY=${{ secrets.PORKBUN_SECRET_KEY }}
           script: |
             echo "Deploying Traefik..."
             cd /home/almonium/infra/traefik # Or where you cloned almonium-infra/traefik
 
             # Make Porkbun API keys available to docker-compose
             # The docker-compose.yaml above refers to these exact names
-            export PORKBUN_API_KEY="${PORKBUN_API_KEY_FROM_GH_SECRET}"
-            export PORKBUN_SECRET_KEY="${PORKBUN_SECRET_KEY_FROM_GH_SECRET}"
+            export PORKBUN_API_KEY="${VAR_PORKBUN_API_KEY}"
+            export PORKBUN_SECRET_KEY="${VAR_PORKBUN_SECRET_KEY}"
 
             # Create acme.json with correct permissions if it doesn't exist
             if [ ! -f "./acme.json" ]; then

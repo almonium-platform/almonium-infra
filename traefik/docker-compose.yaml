@@ -22,8 +22,8 @@ services:
       - "8080:8080" # Traefik Dashboard (optional, secure later if exposed)
     environment:
       # These will be populated by GitHub Actions during Traefik deployment
-      - "PORKBUN_API_KEY=${PORKBUN_API_KEY_FROM_GH_SECRET}"
-      - "PORKBUN_SECRET_KEY=${PORKBUN_SECRET_KEY_FROM_GH_SECRET}"
+      - PORKBUN_API_KEY=${PORKBUN_API_KEY}
+      - PORKBUN_SECRET_KEY=${PORKBUN_SECRET_KEY}
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "./acme.json:/letsencrypt/acme.json" # Persist SSL certificates and account info
