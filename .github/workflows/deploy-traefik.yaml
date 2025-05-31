@@ -19,25 +19,12 @@ jobs:
           host: ${{ secrets.CLOUD_HOST }}
           username: ${{ secrets.CLOUD_USERNAME }}
           key: ${{ secrets.CLOUD_KEY }}
-          envs: |
-            VAR_PORKBUN_API_KEY=${{ secrets.PORKBUN_API_KEY }}
-            VAR_PORKBUN_SECRET_KEY=${{ secrets.PORKBUN_SECRET_KEY }}
           script: |
+            export SHELL_PORKBUN_API_KEY="${{ secrets.PORKBUN_API_KEY }}"
+            export SHELL_PORKBUN_SECRET_KEY="${{ secrets.PORKBUN_SECRET_KEY }}"
+
             echo "Deploying Traefik..."
-            cd /home/almonium/infra/traefik
-            
-            export SHELL_PORKBUN_API_KEY="${VAR_PORKBUN_API_KEY}"
-            export SHELL_PORKBUN_SECRET_KEY="${VAR_PORKBUN_SECRET_KEY}"
-            
-            echo "--- DEBUG: Checking Environment Variables ---"
-            echo "Value of VAR_PORKBUN_API_KEY (from GH envs): [${VAR_PORKBUN_API_KEY}]" # Will show as [***] if set
-            echo "Value of VAR_PORKBUN_SECRET_KEY (from GH envs): [${VAR_PORKBUN_SECRET_KEY}]" # Will show as [***] if set
-            echo "Value of SHELL_PORKBUN_API_KEY (exported): [${SHELL_PORKBUN_API_KEY}]" # Will show as [***] if set
-            echo "Value of SHELL_PORKBUN_SECRET_KEY (exported): [${SHELL_PORKBUN_SECRET_KEY}]" # Will show as [***] if set
-            echo "Checking if secrets are empty (should not be true if secrets are set):"
-            [ -z "${VAR_PORKBUN_API_KEY}" ] && echo "VAR_PORKBUN_API_KEY IS EMPTY OR UNSET"
-            [ -z "${VAR_PORKBUN_SECRET_KEY}" ] && echo "VAR_PORKBUN_SECRET_KEY IS EMPTY OR UNSET"
-            echo "--- END DEBUG ---"
+            cd /home/almonium/infra/traefik            
 
             # Create acme.json with correct permissions if it doesn't exist
             if [ ! -f "./acme.json" ]; then
