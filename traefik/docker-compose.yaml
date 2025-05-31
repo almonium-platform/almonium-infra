@@ -1,47 +1,49 @@
 services:
   traefik:
-    image: traefik:v3.4.1
+    image: traefik:v2.11 # Use a specific recent version like v2.11 or v3.0
     container_name: traefik_proxy
     command:
-      - "--api.insecure=true" # For dashboard access locally (localhost:8080) - SECURE LATER
+      - "--api.insecure=true" # For dashboard access locally (127.0.0.1:8080)
+      - "--log.level=DEBUG" # Temporarily for more verbose logs during setup
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
-      # Redirect HTTP to HTTPS (global redirect)
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-      # Let's Encrypt with Porkbun DNS-01
-      - "--certificatesresolvers.porkbun.acme.email=tech@almonium.com" # Change this
+      - "--certificatesresolvers.porkbun.acme.email=tech@almonium.com"
       - "--certificatesresolvers.porkbun.acme.storage=/letsencrypt/acme.json"
       - "--certificatesresolvers.porkbun.acme.dnschallenge.provider=porkbun"
-      # Environment variables for Porkbun API keys will be passed to this container
+      - "--certificatesresolvers.porkbun.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory" # UNCOMMENT FOR STAGING/TESTING LETSENCRYPT
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080" # Traefik Dashboard (optional, secure later if exposed)
+      - "127.0.0.1:8080:8080" # Traefik Dashboard - localhost only access
     environment:
-      # These will be populated by GitHub Actions during Traefik deployment
       - PORKBUN_API_KEY=${PORKBUN_API_KEY}
       - PORKBUN_SECRET_KEY=${PORKBUN_SECRET_KEY}
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "./acme.json:/letsencrypt/acme.json" # Persist SSL certificates and account info
+      - "./acme.json:/letsencrypt/acme.json"
     networks:
-      - proxy-net # All backend apps will connect to this
+      - proxy-net
     restart: unless-stopped
-  whoami-test:
+
+  whoami-for-main-api: # Renamed for clarity
     image: traefik/whoami
-    container_name: whoami_test_service
+    container_name: whoami_main_api_test
     networks:
       - proxy-net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.whoami-test.rule=Host(`test-api.almonium.com`)"
-      - "traefik.http.routers.whoami-test.entrypoints=websecure"
-      - "traefik.http.routers.whoami-test.tls.certresolver=porkbun"
-      - "traefik.http.services.whoami-test-svc.loadbalancer.server.port=80"
+      # Route for your actual API domain
+      - "traefik.http.routers.main-api-whoami.rule=Host(`api.almonium.com`)"
+      - "traefik.http.routers.main-api-whoami.entrypoints=websecure"
+      - "traefik.http.routers.main-api-whoami.tls.certresolver=porkbun"
+      # Service this router points to
+      - "traefik.http.services.main-api-whoami-svc.loadbalancer.server.port=80"
+    # No need for the test-api.almonium.com router anymore unless you want to keep it for a bit
 
 networks:
   proxy-net:
-    name: proxy-net # Create the network if it doesn't exist
+    name: proxy-net
