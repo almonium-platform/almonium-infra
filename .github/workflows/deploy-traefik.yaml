@@ -37,9 +37,6 @@ jobs:
               chmod 600 ./acme.json
             fi
 
-            # Create proxy-net network if it doesn't exist
-            docker network inspect proxy-net >/dev/null 2>&1 || docker network create proxy-net
-
             docker compose pull traefik # Pull the specified image version
             docker compose up -d --remove-orphans traefik
             echo "Traefik deployment attempted."
