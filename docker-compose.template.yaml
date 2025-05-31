@@ -72,6 +72,7 @@ services:
 
     labels:
       - "traefik.enable=true" # Always enable Traefik for this service
+      - "traefik.docker.network=proxy-net"
 
       # --- Router for api.almonium.com ---
       # This router will only be fully active if TRAEFIK_APP_ACTIVE_INSTANCE is true.
