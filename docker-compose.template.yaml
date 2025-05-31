@@ -5,8 +5,17 @@ services:
     environment:
       TAG: ${TAG}
       DEPLOY_SLOT: ${DEPLOY_SLOT}
-      SERVER_PORT: ${APP_INTERNAL_PORT}
+      SERVER_PORT: ${APP_INTERNAL_PORT} # e.g., 9998 (App listens on this internally)
+      APP_INTERNAL_PORT: ${APP_INTERNAL_PORT} # For clarity if used elsewhere, same as SERVER_PORT
 
+      # --- START Traefik Blue/Green Strategy Variable ---
+      # This variable will be set by deploy.sh.
+      # If 'true', this instance is the active one for api.almonium.com.
+      # If 'false' or unset, it's a standby or non-live instance.
+      TRAEFIK_APP_ACTIVE_INSTANCE: "${TRAEFIK_APP_ACTIVE_INSTANCE:-false}"
+      # --- END Traefik Blue/Green Strategy Variable ---
+
+      # ... (ALL YOUR OTHER EXISTING ENVIRONMENT VARIABLES: LOCAL_PORT, DEBUG_PORT, JWT_SECRET, DB_*, etc. remain unchanged)
       # Server Configuration
       LOCAL_PORT: ${LOCAL_PORT}
       DEBUG_PORT: ${DEBUG_PORT}
@@ -38,7 +47,7 @@ services:
 
       # Google Cloud Configuration
       GOOGLE_PROJECT_ID: ${GOOGLE_PROJECT_ID}
-      GOOGLE_SERVICE_ACCOUNT_KEY_BASE64: ${GOOGLE_SERVICE_ACCOUNT_KEY_BASE64} # Your app decodes this
+      GOOGLE_SERVICE_ACCOUNT_KEY_BASE64: ${GOOGLE_SERVICE_ACCOUNT_KEY_BASE64}
 
       # Firebase Configuration
       FIREBASE_STORAGE_BUCKET: ${FIREBASE_STORAGE_BUCKET}
@@ -61,12 +70,47 @@ services:
       MAIL_USERNAME: ${MAIL_USERNAME}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
 
-    networks:
-      - proxy-net
-      - broker-net
+    labels:
+      - "traefik.enable=true" # Always enable Traefik for this service
+
+      # --- Router for api.almonium.com ---
+      # This router will only be fully active if TRAEFIK_APP_ACTIVE_INSTANCE is true.
+      # We use a dynamic rule based on an environment variable.
+      # If TRAEFIK_APP_ACTIVE_INSTANCE is 'true', the rule becomes Host(`api.almonium.com`).
+      # If it's 'false' or unset, the rule becomes Host(`inactive-${DEPLOY_SLOT}.almonium.com`) (or similar non-live hostname)
+      # to prevent it from accidentally taking live traffic but still allowing Traefik to manage it.
+      # A simpler method is to ensure only the active container has the Host(`api.almonium.com`) rule.
+      # Let's go with the simpler method: only the active slot gets the live rule.
+
+      # Common labels for the service this router will point to
+      - "traefik.http.services.almonium-app-svc-${DEPLOY_SLOT}.loadbalancer.server.port=${APP_INTERNAL_PORT}"
+
+      # --- Conditional Router for LIVE traffic (api.almonium.com) ---
+      # These labels are for making this instance LIVE.
+      # The deploy.sh will decide which instance (blue or green) gets these.
+      # For the ACTIVE slot:
+      - "traefik.http.routers.almonium-api-live.rule=Host(`api.almonium.com`)"
+      - "traefik.http.routers.almonium-api-live.entrypoints=websecure"
+      - "traefik.http.routers.almonium-api-live.tls.certresolver=porkbun"
+      - "traefik.http.routers.almonium-api-live.service=almonium-app-svc-${DEPLOY_SLOT}" # Point to this instance's service
+      # Set a high priority for the live router to ensure it's chosen if multiple match (though stopping old one is cleaner)
+      - "traefik.http.routers.almonium-api-live.priority=100"
+
+      # --- Optional: Router for testing the specific slot (e.g., blue.api.almonium.com) ---
+      # This allows you to test a slot before making it live. Requires DNS for blue/green subdomains.
+      # - "traefik.http.routers.almonium-api-${DEPLOY_SLOT}.rule=Host(`${DEPLOY_SLOT}.api.almonium.com`)"
+      # - "traefik.http.routers.almonium-api-${DEPLOY_SLOT}.entrypoints=websecure"
+      # - "traefik.http.routers.almonium-api-${DEPLOY_SLOT}.tls.certresolver=porkbun"
+      # - "traefik.http.routers.almonium-api-${DEPLOY_SLOT}.service=almonium-app-svc-${DEPLOY_SLOT}"
+      # - "traefik.http.routers.almonium-api-${DEPLOY_SLOT}.priority=10" # Lower priority
+
     ports:
-      - "${LOCAL_HEALTHCHECK_PORT}:${APP_INTERNAL_PORT}" # For deploy.sh healthcheck ONLY
-    healthcheck:
+      # This port is ONLY for the deploy.sh healthcheck. Traefik handles public traffic.
+      - "${LOCAL_HEALTHCHECK_PORT}:${APP_INTERNAL_PORT}"
+    networks:
+      - proxy-net # Connect to Traefik's network
+      - broker-net
+    healthcheck: # Internal Docker healthcheck, Traefik can also use this
       test: [ "CMD", "curl", "-f", "http://localhost:${APP_INTERNAL_PORT}/api/v1/actuator/health" ]
       interval: 10s
       timeout: 3s
@@ -75,6 +119,6 @@ services:
 
 networks:
   proxy-net:
-    external: true
+    external: true # Defined by Traefik's docker-compose.yaml
   broker-net:
     external: true

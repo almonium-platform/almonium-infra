@@ -2,8 +2,6 @@
 set -euo pipefail # Exit on error, undefined variable, pipe failure
 
 # --- Configuration & Secrets Export ---
-
-# Deployment specific (from CI)
 export TAG="${1:?Error: IMAGE_TAG argument (DEPLOY_IMAGE_TAG) is required.}"
 
 # Server Configuration
@@ -63,72 +61,65 @@ export MAIL_PASSWORD="${CONF_MAIL_PASSWORD:?CONF_MAIL_PASSWORD not set}"
 # --- Blue/Green Deployment Logic ---
 ROOT="/home/almonium/infra"
 COLOR_FILE="$ROOT/.next_color"
-CURRENT_LINK="$ROOT/current"
-COMPOSE_TEMPLATE_FILE="$ROOT/docker-compose.template.yaml" # Define path to template
+COMPOSE_TEMPLATE_FILE="$ROOT/docker-compose.template.yaml"
 
 # Decide which colour (slot) will be (re)deployed
 export DEPLOY_SLOT=$(cat "$COLOR_FILE" 2>/dev/null || echo "blue")
+export APP_INTERNAL_PORT="9998" # App listens on this port INSIDE its container
 
-# Determine host port and internal app port for this slot
-export APP_INTERNAL_PORT="9998" # Your Spring Boot app listens on this port INSIDE the container
-
-# Use distinct local ports for healthchecking blue/green slots directly
-LOCAL_HEALTHCHECK_PORT_BLUE="9988"
-LOCAL_HEALTHCHECK_PORT_GREEN="9989"
+# Use distinct local ports for healthchecking blue/green slots directly via Docker port mapping
+LOCAL_HEALTHCHECK_PORT_BLUE="9988" # Arbitrary, unused host port for blue healthcheck
+LOCAL_HEALTHCHECK_PORT_GREEN="9989" # Arbitrary, unused host port for green healthcheck
 
 if [[ "$DEPLOY_SLOT" == "blue" ]]; then
   export LOCAL_HEALTHCHECK_PORT="$LOCAL_HEALTHCHECK_PORT_BLUE"
+  export TRAEFIK_ROUTER_PRIORITY="100" # Active slot gets high priority
 else
   export LOCAL_HEALTHCHECK_PORT="$LOCAL_HEALTHCHECK_PORT_GREEN"
+  export TRAEFIK_ROUTER_PRIORITY="100" # Active slot gets high priority
 fi
 
-# Note: We don't strictly need to 'cd' into blue/green if we use -f and -p,
-# but 'cd' can be useful if other files in blue/green dirs are needed (like upstream.conf).
-# For docker-compose itself, project name (-p) is key if not relying on directory name.
-TARGET_DIR_FOR_OTHER_FILES="$ROOT/$DEPLOY_SLOT" # Still useful for ln, etc.
+# Determine the PREVIOUS slot that needs to be stopped/deprioritized
+PREVIOUS_SLOT=$([[ "$DEPLOY_SLOT" == "blue" ]] && echo "green" || echo "blue")
 
-echo "👉 Deploying $DEPLOY_SLOT stack (app) using template $COMPOSE_TEMPLATE_FILE with tag $TAG."
-echo "   App internal port: $APP_INTERNAL_PORT, Local healthcheck via port: $LOCAL_HEALTHCHECK_PORT"
+echo "👉 Deploying app slot: $DEPLOY_SLOT with image tag $TAG for Traefik."
+echo "   App internal port: $APP_INTERNAL_PORT, Local healthcheck via host port: $LOCAL_HEALTHCHECK_PORT"
+echo "   This slot ($DEPLOY_SLOT) will be configured as the LIVE service for api.almonium.com."
 
+# Pull the new image
 docker compose -p "$DEPLOY_SLOT" -f "$COMPOSE_TEMPLATE_FILE" pull app
+
+# Start the new application slot (blue or green).
+# Its labels will define it as wanting to serve api.almonium.com.
+# TRAEFIK_ROUTER_PRIORITY is passed as an env var for the compose template if needed.
 docker compose -p "$DEPLOY_SLOT" -f "$COMPOSE_TEMPLATE_FILE" up -d --remove-orphans app
 
-echo "🩺 Waiting for container health on http://127.0.0.1:${LOCAL_HEALTHCHECK_PORT}/api/v1/actuator/health ..."
-
-retries=30
+echo "🩺 Waiting for container $DEPLOY_SLOT (app_${DEPLOY_SLOT}) to be healthy on http://127.0.0.1:${LOCAL_HEALTHCHECK_PORT}/api/v1/actuator/health ..."
+retries=60 # Increased retries slightly
 count=0
-# Health check against the HOST_PORT because that's where Nginx will eventually route traffic.
-# The docker-compose.yaml maps HOST_PORT to APP_INTERNAL_PORT.
 until curl -sf "http://127.0.0.1:${LOCAL_HEALTHCHECK_PORT}/api/v1/actuator/health" 2>/dev/null | grep -q '"status":"UP"'; do
   count=$((count+1))
   if [ $count -ge $retries ]; then
-    echo "❌ Health check failed for $DEPLOY_SLOT after $retries retries. See logs for 'app_${DEPLOY_SLOT}'."
-    # Consider adding: docker compose logs app
+    echo "❌ Health check failed for $DEPLOY_SLOT (app_${DEPLOY_SLOT}) after $retries retries."
+    docker compose -p "$DEPLOY_SLOT" -f "$COMPOSE_TEMPLATE_FILE" logs app # Show logs on failure
     exit 1
   fi
+  echo "Health check attempt $count/$retries for $DEPLOY_SLOT failed. Retrying in 2s..."
   sleep 2
 done
-echo "✅ Container for $DEPLOY_SLOT is healthy (checked via local port)."
+echo "✅ Container $DEPLOY_SLOT (app_${DEPLOY_SLOT}) is healthy (checked via local port mapping)."
 
-# In deploy.sh, after health check passes and before nginx reload:
-ACTIVE_UPSTREAM_CONF_FILE="$ROOT/active_upstream.conf" # $ROOT is /home/almonium/infra
-echo "Writing active upstream to $ACTIVE_UPSTREAM_CONF_FILE for port $HOST_PORT"
-echo "server 127.0.0.1:${HOST_PORT};" > "$ACTIVE_UPSTREAM_CONF_FILE"
-# Optional: Add keepalive or other upstream directives if desired
-echo "keepalive 32;" >> "$ACTIVE_UPSTREAM_CONF_FILE"
+# --- Traffic Switching with Traefik ---
+echo "Switching Traefik traffic to $DEPLOY_SLOT by stopping previous slot: $PREVIOUS_SLOT."
 
-sudo nginx -s reload
-echo "🔀 Traffic switched to $DEPLOY_SLOT (port $HOST_PORT via $ACTIVE_UPSTREAM_CONF_FILE)"
+# Stop and remove the PREVIOUS application slot.
+# When it's gone, Traefik will only see the NEWLY DEPLOYED slot (DEPLOY_SLOT)
+# as a backend for the Host(`api.almonium.com`) router rule.
+docker compose -p "$PREVIOUS_SLOT" -f "$COMPOSE_TEMPLATE_FILE" down --remove-orphans || echo "Info: Could not stop $PREVIOUS_SLOT (app_${PREVIOUS_SLOT}), or it was already down."
+
+echo "🔀 Traefik should now be routing traffic for api.almonium.com to $DEPLOY_SLOT (app_${DEPLOY_SLOT})."
 
 # Flip the colour for the next deploy
-NEXT_DEPLOY_SLOT=$([[ "$DEPLOY_SLOT" == "blue" ]] && echo "green" || echo "blue")
-echo "$NEXT_DEPLOY_SLOT" > "$COLOR_FILE"
+echo "$([[ "$DEPLOY_SLOT" == "blue" ]] && echo "green" || echo "blue")" > "$COLOR_FILE"
 
-# Optionally stop previous colour's container(s)
-PREVIOUS_SLOT="$NEXT_DEPLOY_SLOT" # This is the slot that was active *before* this deployment
-
-echo "Stopping previous slot: $PREVIOUS_SLOT"
-# Use -p for the project name and -f for the compose file for 'down' as well
-docker compose -p "$PREVIOUS_SLOT" -f "$COMPOSE_TEMPLATE_FILE" down --remove-orphans || echo "Could not stop $PREVIOUS_SLOT, or it was already down. Continuing."
-
-echo "✅ Deploy of $DEPLOY_SLOT finished successfully."
+echo "✅ Deploy of $DEPLOY_SLOT (for Traefik) finished successfully."
