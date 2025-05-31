@@ -3,6 +3,7 @@ services:
     image: traefik:v3.4.1
     container_name: traefik_proxy
     command:
+      - "--api.insecure=true" # for Traefik dashboard
       - "--log.level=INFO"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
@@ -16,6 +17,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "127.0.0.1:8080:8080" # Traefik dashboard
     environment:
       - PORKBUN_API_KEY=${SHELL_PORKBUN_API_KEY}
       - PORKBUN_SECRET_API_KEY=${SHELL_PORKBUN_SECRET_KEY}
