@@ -1,10 +1,9 @@
 services:
   traefik:
-    image: traefik:latest
+    image: traefik:v3.4.1
     container_name: traefik_proxy
     command:
-      - "--api.insecure=true" # For dashboard access locally (127.0.0.1:8080)
-      - "--log.level=DEBUG" # Temporarily for more verbose logs during setup
+      - "--log.level=INFO"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
@@ -17,7 +16,6 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "127.0.0.1:8080:8080" # Traefik Dashboard - localhost only access
     environment:
       - PORKBUN_API_KEY=${SHELL_PORKBUN_API_KEY}
       - PORKBUN_SECRET_API_KEY=${SHELL_PORKBUN_SECRET_KEY}
@@ -27,18 +25,6 @@ services:
     networks:
       - proxy-net
     restart: unless-stopped
-
-  whoami-for-main-api: # This service will trigger Traefik
-    image: traefik/whoami
-    container_name: whoami_main_api_test
-    networks:
-      - proxy-net
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.main-api-whoami.rule=Host(`api.almonium.com`)"
-      - "traefik.http.routers.main-api-whoami.entrypoints=websecure"
-      - "traefik.http.routers.main-api-whoami.tls.certresolver=porkbun"
-      - "traefik.http.services.main-api-whoami-svc.loadbalancer.server.port=80"
 
   frontend-almonium-com:
     image: nginx:alpine
