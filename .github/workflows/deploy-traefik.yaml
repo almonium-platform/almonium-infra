@@ -1,0 +1,49 @@
+name: Deploy Traefik Proxy
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master ]
+    paths:
+      - 'traefik/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout infra code
+        uses: actions/checkout@v4
+        with:
+          repository: almonium-platform/almonium-infra
+          token: ${{ secrets.GH_PAT_FOR_INFRA_REPO_CHECKOUT }}
+          path: almonium-infra
+
+      - name: Deploy Traefik to Server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.CLOUD_HOST }}
+          username: almonium
+          key: ${{ secrets.CLOUD_KEY }}
+          envs: |
+            PORKBUN_API_KEY_FROM_GH_SECRET=${{ secrets.PORKBUN_API_KEY }}
+            PORKBUN_SECRET_KEY_FROM_GH_SECRET=${{ secrets.PORKBUN_SECRET_KEY }}
+          script: |
+            echo "Deploying Traefik..."
+            cd /home/almonium/infra/traefik # Or where you cloned almonium-infra/traefik
+
+            # Make Porkbun API keys available to docker-compose
+            # The docker-compose.yaml above refers to these exact names
+            export PORKBUN_API_KEY="${PORKBUN_API_KEY_FROM_GH_SECRET}"
+            export PORKBUN_SECRET_KEY="${PORKBUN_SECRET_KEY_FROM_GH_SECRET}"
+
+            # Create acme.json with correct permissions if it doesn't exist
+            if [ ! -f "./acme.json" ]; then
+              touch ./acme.json
+              chmod 600 ./acme.json
+            fi
+
+            # Create proxy-net network if it doesn't exist
+            docker network inspect proxy-net >/dev/null 2>&1 || docker network create proxy-net
+
+            docker compose pull traefik # Pull the specified image version
+            docker compose up -d --remove-orphans traefik
+            echo "Traefik deployment attempted."

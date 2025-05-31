@@ -62,9 +62,10 @@ services:
       MAIL_PASSWORD: ${MAIL_PASSWORD}
 
     networks:
+      - proxy-net
       - broker-net
     ports:
-      - "${HOST_PORT}:${APP_INTERNAL_PORT}"
+      - "${LOCAL_HEALTHCHECK_PORT}:${APP_INTERNAL_PORT}" # For deploy.sh healthcheck ONLY
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:${APP_INTERNAL_PORT}/api/v1/actuator/health" ]
       interval: 10s
@@ -73,5 +74,7 @@ services:
     restart: unless-stopped
 
 networks:
+  proxy-net:
+    external: true
   broker-net:
     external: true

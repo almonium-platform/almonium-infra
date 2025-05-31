@@ -71,10 +71,15 @@ export DEPLOY_SLOT=$(cat "$COLOR_FILE" 2>/dev/null || echo "blue")
 
 # Determine host port and internal app port for this slot
 export APP_INTERNAL_PORT="9998" # Your Spring Boot app listens on this port INSIDE the container
+
+# Use distinct local ports for healthchecking blue/green slots directly
+LOCAL_HEALTHCHECK_PORT_BLUE="9988"
+LOCAL_HEALTHCHECK_PORT_GREEN="9989"
+
 if [[ "$DEPLOY_SLOT" == "blue" ]]; then
-  export HOST_PORT="9998" # Blue exposed on host 9998
+  export LOCAL_HEALTHCHECK_PORT="$LOCAL_HEALTHCHECK_PORT_BLUE"
 else
-  export HOST_PORT="9999" # Green exposed on host 9999
+  export LOCAL_HEALTHCHECK_PORT="$LOCAL_HEALTHCHECK_PORT_GREEN"
 fi
 
 # Note: We don't strictly need to 'cd' into blue/green if we use -f and -p,
@@ -82,17 +87,19 @@ fi
 # For docker-compose itself, project name (-p) is key if not relying on directory name.
 TARGET_DIR_FOR_OTHER_FILES="$ROOT/$DEPLOY_SLOT" # Still useful for ln, etc.
 
-echo "👉 Deploying $DEPLOY_SLOT stack (service: app) using template $COMPOSE_TEMPLATE_FILE with image tag $TAG, container host port $HOST_PORT (app internal port $APP_INTERNAL_PORT)"
+echo "👉 Deploying $DEPLOY_SLOT stack (app) using template $COMPOSE_TEMPLATE_FILE with tag $TAG."
+echo "   App internal port: $APP_INTERNAL_PORT, Local healthcheck via port: $LOCAL_HEALTHCHECK_PORT"
 
 docker compose -p "$DEPLOY_SLOT" -f "$COMPOSE_TEMPLATE_FILE" pull app
 docker compose -p "$DEPLOY_SLOT" -f "$COMPOSE_TEMPLATE_FILE" up -d --remove-orphans app
 
-echo "🩺 Waiting for container health on http://127.0.0.1:${HOST_PORT}/api/v1/actuator/health ..."
+echo "🩺 Waiting for container health on http://127.0.0.1:${LOCAL_HEALTHCHECK_PORT}/api/v1/actuator/health ..."
+
 retries=30
 count=0
 # Health check against the HOST_PORT because that's where Nginx will eventually route traffic.
 # The docker-compose.yaml maps HOST_PORT to APP_INTERNAL_PORT.
-until curl -sf "http://127.0.0.1:${HOST_PORT}/api/v1/actuator/health" 2>/dev/null | grep -q '"status":"UP"'; do
+until curl -sf "http://127.0.0.1:${LOCAL_HEALTHCHECK_PORT}/api/v1/actuator/health" 2>/dev/null | grep -q '"status":"UP"'; do
   count=$((count+1))
   if [ $count -ge $retries ]; then
     echo "❌ Health check failed for $DEPLOY_SLOT after $retries retries. See logs for 'app_${DEPLOY_SLOT}'."
@@ -101,7 +108,7 @@ until curl -sf "http://127.0.0.1:${HOST_PORT}/api/v1/actuator/health" 2>/dev/nul
   fi
   sleep 2
 done
-echo "✅ Container for $DEPLOY_SLOT is healthy."
+echo "✅ Container for $DEPLOY_SLOT is healthy (checked via local port)."
 
 # In deploy.sh, after health check passes and before nginx reload:
 ACTIVE_UPSTREAM_CONF_FILE="$ROOT/active_upstream.conf" # $ROOT is /home/almonium/infra

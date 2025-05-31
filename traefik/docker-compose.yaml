@@ -1,0 +1,36 @@
+services:
+  traefik:
+    image: traefik:v3.4.1
+    container_name: traefik_proxy
+    command:
+      - "--api.insecure=true" # For dashboard access locally (localhost:8080) - SECURE LATER
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      # Redirect HTTP to HTTPS (global redirect)
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      # Let's Encrypt with Porkbun DNS-01
+      - "--certificatesresolvers.porkbun.acme.email=tech@almonium.com" # Change this
+      - "--certificatesresolvers.porkbun.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.porkbun.acme.dnschallenge.provider=porkbun"
+      # Environment variables for Porkbun API keys will be passed to this container
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080" # Traefik Dashboard (optional, secure later if exposed)
+    environment:
+      # These will be populated by GitHub Actions during Traefik deployment
+      - "PORKBUN_API_KEY=${PORKBUN_API_KEY_FROM_GH_SECRET}"
+      - "PORKBUN_SECRET_KEY=${PORKBUN_SECRET_KEY_FROM_GH_SECRET}"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./acme.json:/letsencrypt/acme.json" # Persist SSL certificates and account info
+    networks:
+      - proxy-net # All backend apps will connect to this
+    restart: unless-stopped
+
+networks:
+  proxy-net:
+    name: proxy-net # Create the network if it doesn't exist
