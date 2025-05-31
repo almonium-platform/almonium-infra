@@ -12,16 +12,12 @@ jobs:
     steps:
       - name: Checkout infra code
         uses: actions/checkout@v4
-        with:
-          repository: almonium-platform/almonium-infra
-          token: ${{ secrets.GH_PAT_FOR_INFRA_REPO_CHECKOUT }}
-          path: almonium-infra
 
       - name: Deploy Traefik to Server
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.CLOUD_HOST }}
-          username: almonium
+          username: ${{ secrets.CLOUD_USERNAME }}
           key: ${{ secrets.CLOUD_KEY }}
           envs: |
             PORKBUN_API_KEY_FROM_GH_SECRET=${{ secrets.PORKBUN_API_KEY }}
