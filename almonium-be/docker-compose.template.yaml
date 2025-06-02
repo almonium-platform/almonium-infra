@@ -1,14 +1,15 @@
 services:
   app:
     image: ghcr.io/almonium-platform/almonium-be:${TAG}
-    container_name: app_${DEPLOY_SLOT}
+    container_name: app_${DEPLOY_ENVIRONMENT}_${DEPLOY_SLOT}
     environment:
       TAG: ${TAG}
       DEPLOY_SLOT: ${DEPLOY_SLOT}
+      DEPLOY_ENVIRONMENT: ${DEPLOY_ENVIRONMENT}
+      API_HOSTNAME: ${API_HOSTNAME}
+
       SERVER_PORT: ${APP_INTERNAL_PORT}
       APP_INTERNAL_PORT: ${APP_INTERNAL_PORT}
-
-      TRAEFIK_APP_ACTIVE_INSTANCE: "${TRAEFIK_APP_ACTIVE_INSTANCE:-false}"
 
       # Server Configuration
       LOCAL_PORT: ${LOCAL_PORT}
@@ -67,12 +68,13 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy-net"
-      - "traefik.http.services.almonium-app-svc-${DEPLOY_SLOT}.loadbalancer.server.port=${APP_INTERNAL_PORT}"
-      - "traefik.http.routers.almonium-api-live.rule=Host(`api.almonium.com`)"
-      - "traefik.http.routers.almonium-api-live.entrypoints=websecure"
-      - "traefik.http.routers.almonium-api-live.tls.certresolver=porkbun"
-      - "traefik.http.routers.almonium-api-live.service=almonium-app-svc-${DEPLOY_SLOT}"
-      - "traefik.http.routers.almonium-api-live.priority=100"
+      - "traefik.http.services.app-svc-${DEPLOY_ENVIRONMENT}-${DEPLOY_SLOT}.loadbalancer.server.port=${APP_INTERNAL_PORT}"
+      - "traefik.http.routers.app-router-${DEPLOY_ENVIRONMENT}-${DEPLOY_SLOT}.rule=Host(`${API_HOSTNAME}`)"
+      - "traefik.http.routers.app-router-${DEPLOY_ENVIRONMENT}-${DEPLOY_SLOT}.entrypoints=websecure"
+      - "traefik.http.routers.app-router-${DEPLOY_ENVIRONMENT}-${DEPLOY_SLOT}.tls=true"
+      - "traefik.http.routers.app-router-${DEPLOY_ENVIRONMENT}-${DEPLOY_SLOT}.tls.certresolver=porkbun"
+      - "traefik.http.routers.app-router-${DEPLOY_ENVIRONMENT}-${DEPLOY_SLOT}.service=app-svc-${DEPLOY_ENVIRONMENT}-${DEPLOY_SLOT}"
+      - "traefik.http.routers.app-router-${DEPLOY_ENVIRONMENT}-${DEPLOY_SLOT}.priority=100"
 
     ports:
       - "${LOCAL_HEALTHCHECK_PORT}:${APP_INTERNAL_PORT}"
