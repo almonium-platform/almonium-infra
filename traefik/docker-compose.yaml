@@ -33,6 +33,7 @@ services:
     container_name: frontend_almonium_com
     volumes:
       - /var/www/almonium-fe:/usr/share/nginx/html:ro
+      - ./nginx-configs/spa.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
       - proxy-net
     labels:
@@ -48,6 +49,7 @@ services:
     container_name: frontend_almonium_com_staging
     volumes:
       - /var/www/almonium-fe-staging:/usr/share/nginx/html:ro
+      - ./nginx-configs/spa.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
       - proxy-net
     labels:
