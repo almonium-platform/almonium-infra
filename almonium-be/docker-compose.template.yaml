@@ -1,9 +1,9 @@
 services:
   app:
-    image: ghcr.io/almonium-platform/almonium-be:${TAG}
+    image: ghcr.io/almonium-platform/almonium-be:${DEPLOY_IMAGE_TAG}
     container_name: app_${DEPLOY_ENVIRONMENT}_${DEPLOY_SLOT}
     environment:
-      TAG: ${TAG}
+      DEPLOY_IMAGE_TAG: ${DEPLOY_IMAGE_TAG}
       DEPLOY_SLOT: ${DEPLOY_SLOT}
       DEPLOY_ENVIRONMENT: ${DEPLOY_ENVIRONMENT}
       API_HOSTNAME: ${API_HOSTNAME}
