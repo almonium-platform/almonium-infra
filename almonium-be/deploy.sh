@@ -1,6 +1,66 @@
 #!/usr/bin/env bash
 set -euo pipefail # Exit on error, undefined variable, pipe failure
 
+# --- Configuration & Secrets Export ---
+export DEPLOY_IMAGE_TAG="${DEPLOY_IMAGE_TAG:?DEPLOY_IMAGE_TAG not set}"
+export DEPLOY_ENVIRONMENT="${DEPLOY_ENVIRONMENT:?DEPLOY_ENVIRONMENT not set}"
+export API_HOSTNAME="${API_HOSTNAME:?API_HOSTNAME not set}"
+
+# Server Configuration
+export LOCAL_PORT="${CONF_LOCAL_PORT:?CONF_LOCAL_PORT not set}"
+export DEBUG_PORT="${CONF_DEBUG_PORT:?CONF_DEBUG_PORT not set}"
+export SPRING_PROFILE="${CONF_SPRING_PROFILE:?CONF_SPRING_PROFILE not set}"
+
+# JWT Configuration
+export JWT_SECRET="${CONF_JWT_SECRET:?CONF_JWT_SECRET not set}"
+
+# Database Configuration
+export DB_NAME="${CONF_DB_NAME:?CONF_DB_NAME not set}"
+export DB_HOST="${CONF_DB_HOST:?CONF_DB_HOST not set}"
+export DB_PORT="${CONF_DB_PORT:?CONF_DB_PORT not set}"
+export DB_USERNAME="${CONF_DB_USERNAME:?CONF_DB_USERNAME not set}"
+export DB_PASSWORD="${CONF_DB_PASSWORD:?CONF_DB_PASSWORD not set}"
+
+# API Keys
+export RAPID_API_KEY="${CONF_RAPID_API_KEY:?CONF_RAPID_API_KEY not set}"
+export WORDNIK_KEY="${CONF_WORDNIK_KEY:?CONF_WORDNIK_KEY not set}"
+export YANDEX_KEY="${CONF_YANDEX_KEY:?CONF_YANDEX_KEY not set}"
+export OPENAI_KEY="${CONF_OPENAI_KEY:?CONF_OPENAI_KEY not set}"
+
+# Stripe Configuration
+export STRIPE_KEY="${CONF_STRIPE_KEY:?CONF_STRIPE_KEY not set}"
+export STRIPE_WEBHOOK_SECRET="${CONF_STRIPE_WEBHOOK_SECRET:?CONF_STRIPE_WEBHOOK_SECRET not set}"
+
+# Stream Configuration
+export STREAM_KEY="${CONF_STREAM_KEY:?CONF_STREAM_KEY not set}"
+export STREAM_SECRET="${CONF_STREAM_SECRET:?CONF_STREAM_SECRET not set}"
+
+# Google Cloud Configuration
+export GOOGLE_PROJECT_ID="${CONF_GOOGLE_PROJECT_ID:?CONF_GOOGLE_PROJECT_ID not set}"
+export GOOGLE_SERVICE_ACCOUNT_KEY_BASE64="${CONF_GOOGLE_SERVICE_ACCOUNT_KEY_BASE64:?CONF_GOOGLE_SERVICE_ACCOUNT_KEY_BASE64 not set}"
+
+# Firebase Configuration
+export FIREBASE_STORAGE_BUCKET="${CONF_FIREBASE_STORAGE_BUCKET:?CONF_FIREBASE_STORAGE_BUCKET not set}"
+
+# OAuth2 Configuration
+export GOOGLE_ID="${CONF_GOOGLE_ID:?CONF_GOOGLE_ID not set}"
+export GOOGLE_SECRET="${CONF_GOOGLE_SECRET:?CONF_GOOGLE_SECRET not set}"
+export FACEBOOK_ID="${CONF_FACEBOOK_ID:?CONF_FACEBOOK_ID not set}"
+export FACEBOOK_SECRET="${CONF_FACEBOOK_SECRET:?CONF_FACEBOOK_SECRET not set}"
+export APPLE_ID="${CONF_APPLE_ID:?CONF_APPLE_ID not set}"
+export APPLE_SECRET="${CONF_APPLE_SECRET:?CONF_APPLE_SECRET not set}"
+
+# RabbitMQ Configuration
+export RABBITMQ_HOST="${CONF_RABBITMQ_HOST:?CONF_RABBITMQ_HOST not set}"
+export RABBITMQ_PORT="${CONF_RABBITMQ_PORT:?CONF_RABBITMQ_PORT not set}"
+export RABBITMQ_USER="${CONF_RABBITMQ_USER:?CONF_RABBITMQ_USER not set}"
+export RABBITMQ_PASS="${CONF_RABBITMQ_PASS:?CONF_RABBITMQ_PASS not set}"
+
+# Mail Configuration
+export MAIL_USERNAME="${CONF_MAIL_USERNAME:?CONF_MAIL_USERNAME not set}"
+export MAIL_PASSWORD="${CONF_MAIL_PASSWORD:?CONF_MAIL_PASSWORD not set}"
+
+# --- Blue/Green Deployment Logic ---
 ROOT="/home/almonium/infra"
 COMPOSE_TEMPLATE_FILE="$ROOT/almonium-be/docker-compose.template.yaml"
 
