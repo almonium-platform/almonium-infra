@@ -43,6 +43,21 @@ services:
       - "traefik.http.services.almonium-com-svc.loadbalancer.server.port=80"
     restart: unless-stopped
 
+  frontend-almonium-com-staging:
+    image: nginx:alpine
+    container_name: frontend_almonium_com_staging
+    volumes:
+      - /var/www/almonium-fe-staging:/usr/share/nginx/html:ro
+    networks:
+      - proxy-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.almonium-com-staging-router.rule=Host(`staging.almonium.com`)"
+      - "traefik.http.routers.almonium-com-staging-router.entrypoints=websecure"
+      - "traefik.http.routers.almonium-com-staging-router.tls.certresolver=porkbun"
+      - "traefik.http.services.almonium-com-staging-svc.loadbalancer.server.port=80"
+    restart: unless-stopped
+
   frontend-adoptik-com:
     image: nginx:alpine
     container_name: frontend_adoptik_com
