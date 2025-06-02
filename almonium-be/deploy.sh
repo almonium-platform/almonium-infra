@@ -34,7 +34,7 @@ DOCKER_COMPOSE_PROJECT_NAME="${PROJECT_NAME_BASE}${PROJECT_NAME_SUFFIX}"
 
 echo "👉 Deploying for ENVIRONMENT: [$DEPLOY_ENVIRONMENT], TARGET SLOT: [$DEPLOY_SLOT]"
 echo "   Application: ${PROJECT_NAME_BASE}, Docker Compose Project: ${DOCKER_COMPOSE_PROJECT_NAME}"
-echo "   Image Tag: $TAG, API Hostname for Traefik: $API_HOSTNAME"
+echo "   Image Tag: ${DEPLOY_IMAGE_TAG}, API Hostname for Traefik: $API_HOSTNAME"
 echo "   App Internal Port: $APP_INTERNAL_PORT, Script Healthcheck via Host Port: $LOCAL_HEALTHCHECK_PORT"
 
 echo "Pulling image for service 'app'..."
