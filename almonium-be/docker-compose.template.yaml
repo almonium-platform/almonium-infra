@@ -32,6 +32,7 @@ services:
       WORDNIK_KEY: ${WORDNIK_KEY}
       YANDEX_KEY: ${YANDEX_KEY}
       OPENAI_KEY: ${OPENAI_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
 
       # Stripe Configuration
       STRIPE_KEY: ${STRIPE_KEY}
