@@ -57,6 +57,9 @@ services:
       - "traefik.http.routers.app-router-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}.priority=100"
     ports:
       - "{{ LOCAL_HEALTHCHECK_PORT }}:{{ APP_INTERNAL_PORT }}"
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     networks:
       - proxy-net
       - broker-net
