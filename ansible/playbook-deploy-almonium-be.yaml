@@ -35,13 +35,14 @@
       ansible.builtin.set_fact:
         PREVIOUS_SLOT: "{{ 'green' if DEPLOY_SLOT == 'blue' else 'blue' }}"
 
-    - name: Set local healthcheck port for target DEPLOY_SLOT
+    - name: "Set local healthcheck port for target DEPLOY_SLOT"
       ansible.builtin.set_fact:
         LOCAL_HEALTHCHECK_PORT: >-
-          {{ (DEPLOY_ENVIRONMENT == 'staging') | ternary(
-               (DEPLOY_SLOT == 'blue' | ternary('9978', '9979')),
-               (DEPLOY_SLOT == 'blue' | ternary('9988', '9989'))
-             ) }}
+          {% if DEPLOY_ENVIRONMENT == 'staging' %}
+            {{ '9978' if DEPLOY_SLOT == 'blue' else '9979' }}
+          {% else %}
+            {{ '9988' if DEPLOY_SLOT == 'blue' else '9989' }}
+          {% endif %}
 
     - name: Set Docker Compose project name base for environment
       ansible.builtin.set_fact:
