@@ -4,7 +4,7 @@
     path: "/home/almonium/deploy_slots/{{ DOCKER_COMPOSE_PROJECT_NAME }}/{{ DEPLOY_SLOT }}"
     state: directory
     mode: '0755'
-    become: true
+  become: true
 
 # Creates docker-compose.yaml from template
 - name: "Template Docker Compose file for {{ DEPLOY_SLOT }}"
@@ -12,7 +12,7 @@
     src: app-compose.yaml.j2
     dest: "/home/almonium/deploy_slots/{{ DOCKER_COMPOSE_PROJECT_NAME }}/{{ DEPLOY_SLOT }}/docker-compose.yaml"
     mode: '0644'
-    become: true
+  become: true
 
 # Pulls the new image
 - name: "Pull Docker image for {{ DEPLOY_SLOT }}"
