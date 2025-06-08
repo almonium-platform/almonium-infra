@@ -45,7 +45,7 @@
 
     - name: Set Docker Compose project name base for environment
       ansible.builtin.set_fact:
-        DOCKER_COMPOSE_PROJECT_NAME_ENV_BASE: "{{ project_name_base }}{{ project_name_suffix }}"
+        DOCKER_COMPOSE_PROJECT_NAME: "{{ project_name_base }}{{ project_name_suffix }}"
 
     # --- Use import_role INSTEAD of include_role ---
     - name: "Deploy TARGET slot: {{ DEPLOY_SLOT }}"
