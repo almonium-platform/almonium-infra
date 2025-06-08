@@ -55,6 +55,7 @@ services:
       - "traefik.http.routers.app-router-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}.tls.certresolver=porkbun"
       - "traefik.http.routers.app-router-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}.service=app-svc-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}"
       - "traefik.http.routers.app-router-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}.priority=100"
+    command: [ "tail", "-f", "/dev/null" ]
     ports:
       - "{{ LOCAL_HEALTHCHECK_PORT }}:{{ APP_INTERNAL_PORT }}"
     dns:
