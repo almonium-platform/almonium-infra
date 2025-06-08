@@ -3,11 +3,9 @@ version: '3.8'
 
 services:
   app:
-    image:
-      ghcr.io/almonium-platform/almonium-be: {{ DEPLOY_IMAGE_TAG }} # Ansible var
-    container_name: app_{{ DEPLOY_ENVIRONMENT }}_{{ DEPLOY_SLOT }} # Ansible vars
+    image: 'ghcr.io/almonium-platform/almonium-be:{{ DEPLOY_IMAGE_TAG }}'
+    container_name: app_{{ DEPLOY_ENVIRONMENT }}_{{ DEPLOY_SLOT }}
     environment:
-      # Variables passed from Ansible playbook's --extra-vars
       DEPLOY_IMAGE_TAG: "{{ DEPLOY_IMAGE_TAG }}"
       DEPLOY_SLOT: "{{ DEPLOY_SLOT }}"
       DEPLOY_ENVIRONMENT: "{{ DEPLOY_ENVIRONMENT }}"
