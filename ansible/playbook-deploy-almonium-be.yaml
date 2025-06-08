@@ -1,6 +1,5 @@
-# ansible/playbook-deploy-almonium-be.yaml
 - name: Deploy Almonium BE Application (Blue/Green with Ansible)
-  hosts: "{{ target_host_group }}"
+  hosts: all
   gather_facts: false
   vars:
     # All --extra-vars from GitHub Actions are available here
