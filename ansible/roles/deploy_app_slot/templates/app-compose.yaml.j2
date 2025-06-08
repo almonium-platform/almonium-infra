@@ -1,6 +1,4 @@
 # ansible/roles/deploy_app_slot/templates/app-compose.yaml.j2
-version: '3.8'
-
 services:
   app:
     image: 'ghcr.io/almonium-platform/almonium-be:{{ DEPLOY_IMAGE_TAG }}'
