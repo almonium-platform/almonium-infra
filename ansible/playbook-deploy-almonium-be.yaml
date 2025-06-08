@@ -7,54 +7,52 @@
     APP_INTERNAL_PORT: "9998"
 
   tasks:
-    # --- Blue/Green Slot Determination ---
-    - name: Determine which slot to deploy to
-      block:
-        - name: Read next deployment color for the environment
-          ansible.builtin.slurp:
-            src: "{{ infra_root }}/.next_color_{{ DEPLOY_ENVIRONMENT }}"
-          register: color_file_content
-          failed_when: false
+    - name: Read current deployment color for the environment
+      ansible.builtin.slurp:
+        src: "{{ infra_root }}/.next_color_{{ DEPLOY_ENVIRONMENT }}"
+      register: color_file_content
+      failed_when: false
 
-        - name: Set deployment slots based on color file
-          ansible.builtin.set_fact:
-            # If file has 'green', deploy to 'blue'. Otherwise, default to 'blue'.
-            DEPLOY_SLOT: "{{ 'blue' if (color_file_content.content | b64decode) == 'green' else 'green' }}"
-            # The previous slot is the opposite of the new deployment slot.
-            PREVIOUS_SLOT: "{{ 'green' if DEPLOY_SLOT == 'blue' else 'blue' }}"
+    - name: Determine the color to use from file, defaulting to 'blue'
+      ansible.builtin.set_fact:
+        # If the file exists and has content, use it. Otherwise, the next deployment will be blue.
+        _color_from_file: >-
+          {{ color_file_content.content | b64decode
+             if color_file_content.content is defined and color_file_content.content != ""
+             else 'blue' }}
 
-    # --- Port and Project Name Configuration ---
+    - name: Set target and previous deployment slots
+      ansible.builtin.set_fact:
+        DEPLOY_SLOT: "{{ 'green' if _color_from_file == 'blue' else 'blue' }}"
+        PREVIOUS_SLOT: "{{ 'blue' if _color_from_file == 'blue' else 'green' }}"
+
     - name: Set dynamic configuration for the deployment
       ansible.builtin.set_fact:
-        # Assign different healthcheck ports for staging/prod and blue/green to avoid conflicts.
         LOCAL_HEALTHCHECK_PORT: >-
-          {{ {'staging': {'blue': '9978', 'green': '9979'},
-              'production': {'blue': '9988', 'green': '9989'}}
-              [DEPLOY_ENVIRONMENT][DEPLOY_SLOT] }}
+          {% if DEPLOY_ENVIRONMENT == 'staging' %}
+            {{ {'blue': '9978', 'green': '9979'}[DEPLOY_SLOT] }}
+          {% else %}
+            {{ {'blue': '9988', 'green': '9989'}[DEPLOY_SLOT] }}
+          {% endif %}
         DOCKER_COMPOSE_PROJECT_NAME: "{{ project_name_base }}_{{ DEPLOY_ENVIRONMENT }}"
 
-    # --- Deployment Execution ---
     - name: Log in to GitHub Container Registry (GHCR)
       community.docker.docker_login:
         registry: ghcr.io
         username: "{{ DEPLOY_GH_ACTOR }}"
         password: "{{ DEPLOY_GH_TOKEN }}"
-      # This task runs only once, but its login state persists for the play.
       run_once: true
 
     - name: Deploy new application to the TARGET slot '{{ DEPLOY_SLOT }}'
       ansible.builtin.import_role:
         name: deploy_app_slot
-      # The role will use all the facts we've set (DEPLOY_SLOT, LOCAL_HEALTHCHECK_PORT, etc.)
 
-    # --- Cleanup and Finalization ---
     - name: Stop and remove the PREVIOUS slot '{{ PREVIOUS_SLOT }}'
       community.docker.docker_container:
         name: "app_{{ DEPLOY_ENVIRONMENT }}_{{ PREVIOUS_SLOT }}"
         state: absent
-      # This module is idempotent and won't fail if the container doesn't exist.
 
-    - name: Update color file to point to the new active slot
+    - name: Update color file to point to the new active slot for next deployment
       ansible.builtin.copy:
         content: "{{ DEPLOY_SLOT }}"
         dest: "{{ infra_root }}/.next_color_{{ DEPLOY_ENVIRONMENT }}"
