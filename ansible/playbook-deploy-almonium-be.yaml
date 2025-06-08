@@ -47,6 +47,13 @@
       ansible.builtin.set_fact:
         DOCKER_COMPOSE_PROJECT_NAME: "{{ project_name_base }}{{ project_name_suffix }}"
 
+    - name: Log in to GitHub Container Registry (GHCR)
+      community.docker.docker_login:
+        registry: ghcr.io
+        username: "{{ DEPLOY_GH_ACTOR }}" # Passed as --extra-var from GH Action
+        password: "{{ DEPLOY_GH_TOKEN }}" # Passed as --extra-var from GH Action
+      # This task should be run once per playbook execution
+
     # --- Use import_role INSTEAD of include_role ---
     - name: "Deploy TARGET slot: {{ DEPLOY_SLOT }}"
       ansible.builtin.import_role:
