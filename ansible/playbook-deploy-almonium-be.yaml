@@ -21,19 +21,19 @@
       ansible.builtin.slurp:
         src: "{{ color_file_path }}"
       register: color_file_content
-      ignore_errors: true # For first deploy
+      failed_when: false # Don't fail if file not found, just register a miss
 
     - name: Set target DEPLOY_SLOT and PREVIOUS_SLOT
       set_fact:
-        current_color_from_file: "{{ color_file_content.content | b64decode if color_file_content.content else 'green' }}" # Default to deploying blue first
-        # If file says 'green' is next, we deploy 'green'. If 'blue' or empty, we deploy 'blue'.
-        # The file stores the *next* color to deploy. Let's change logic: file stores *current active* color.
-        # NO, let's stick to your original: file stores the *next* color to be deployed.
-        # So if file says "blue", we deploy "blue". If it says "green", we deploy "green".
-        # If file is empty/doesn't exist, we deploy "blue".
-        DEPLOY_SLOT: "{{ color_file_content.content | b64decode if color_file_content.content else 'blue' }}"
-        # This logic determines the PREVIOUS_SLOT based on the one we are about to deploy
-        PREVIOUS_SLOT: "{{ 'green' if (color_file_content.content | b64decode if color_file_content.content else 'blue') == 'blue' else 'blue' }}"
+        # If slurp failed (file not found) or content is empty, default to 'blue'
+        # Otherwise, use the decoded content.
+        _color_from_file: >-
+          {{ color_file_content.content | b64decode
+             if color_file_content.content is defined and color_file_content.content != ""
+             else 'blue' }}
+        # Ensure DEPLOY_SLOT is strictly 'blue' or 'green'
+        DEPLOY_SLOT: "{{ 'green' if _color_from_file == 'green' else 'blue' }}"
+        PREVIOUS_SLOT: "{{ 'green' if DEPLOY_SLOT == 'blue' else 'blue' }}"
 
     - name: Set local healthcheck port for target DEPLOY_SLOT
       set_fact:
@@ -47,7 +47,7 @@
       set_fact:
         DOCKER_COMPOSE_PROJECT_NAME_ENV_BASE: "{{ project_name_base }}{{ project_name_suffix }}" # e.g., almonium-be_staging
 
-    - name: "Deploy TARGET slot: {{ DEPLOY_SLOT }}"
+    - name: "Deploy TARGET slot (DEBUGGING NAME)"
       ansible.builtin.include_role:
         name: deploy_app_slot
       vars:
