@@ -1,6 +1,6 @@
 # ansible/playbook-deploy-almonium-be.yaml
 - name: Deploy Almonium BE Application (Blue/Green with Ansible)
-  hosts: all
+  hosts: "{{ target_host_group }}" # Passed from GH Actions: 'staging_vm' or 'production_vm'
   gather_facts: false
   vars:
     # These are all expected to be passed as --extra-vars from GitHub Actions
