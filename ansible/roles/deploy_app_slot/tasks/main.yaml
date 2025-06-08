@@ -1,9 +1,3 @@
-# ansible/roles/deploy_app_slot/tasks/main.yaml
-# This role expects variables like:
-# - DEPLOY_IMAGE_TAG, DEPLOY_ENVIRONMENT, DEPLOY_SLOT, API_HOSTNAME
-# - APP_INTERNAL_PORT, LOCAL_HEALTHCHECK_PORT
-# - DOCKER_COMPOSE_PROJECT_NAME (e.g., almonium-be_staging)
-# - All CONF_* variables for templating the compose file
 - name: "ROLE DEBUG: Display received variables at start of role" # Static name
   ansible.builtin.debug:
     msg:
@@ -17,11 +11,11 @@
     path: "/home/almonium/deploy_slots/{{ DOCKER_COMPOSE_PROJECT_NAME }}/{{ DEPLOY_SLOT }}" # e.g., /home/almonium/deploy_slots/almonium-be_staging/blue
     state: directory
     mode: '0755'
-  become: true # If almonium user doesn't own /home/almonium/deploy_slots
+  become: true
 
 - name: "Template Docker Compose file for {{ DEPLOY_SLOT }} of {{ DOCKER_COMPOSE_PROJECT_NAME }}"
   ansible.builtin.template:
-    src: app-compose.yaml.j2 # From this role's templates/ directory
+    src: app-compose.yaml.j2
     dest: "/home/almonium/deploy_slots/{{ DOCKER_COMPOSE_PROJECT_NAME }}/{{ DEPLOY_SLOT }}/docker-compose.yaml"
     mode: '0644'
   become: true
@@ -46,21 +40,22 @@
       - app
   register: compose_up_result
 
-- name: "Wait for {{ DEPLOY_SLOT }} of {{ DOCKER_COMPOSE_PROJECT_NAME }} to become healthy"
+- name: "Wait for {{ DEPLOY_SLOT }} to become healthy"
   ansible.builtin.uri:
     url: "http://127.0.0.1:{{ LOCAL_HEALTHCHECK_PORT }}/api/v1/actuator/health"
     method: GET
-    status_code: 200
   register: health_check_result
-  until: "'\"status\":\"UP\"' in health_check_result.content | default('')"
+  until: health_check_result.json is defined and health_check_result.json.status == "UP"
   retries: 60
   delay: 3
-  ignore_errors: true # Check result manually after loop
+  ignore_errors: true
 
-- name: "Fail if health check did not succeed for {{ DEPLOY_SLOT }} of {{ DOCKER_COMPOSE_PROJECT_NAME }}"
+- name: "Fail if health check did not succeed for {{ DEPLOY_SLOT }}"
   ansible.builtin.fail:
-    msg: "Health check failed for {{ DOCKER_COMPOSE_PROJECT_NAME }}_{{ DEPLOY_SLOT }} on port {{ LOCAL_HEALTHCHECK_PORT }}. Last response: {{ health_check_result.content | default('No content') }}"
-  when: health_check_result is failed or ('"status":"UP"' not in health_check_result.content | default(''))
+    msg: |
+      Health check failed for {{ DOCKER_COMPOSE_PROJECT_NAME }}_{{ DEPLOY_SLOT }} on port {{ LOCAL_HEALTHCHECK_PORT }}.
+      Application did not report 'UP' status. Last response: {{ health_check_result.content | default('No content') }}
+  when: health_check_result.json is not defined or health_check_result.json.status != "UP"
 
 - name: "Debug: {{ DEPLOY_SLOT }} of {{ DOCKER_COMPOSE_PROJECT_NAME }} is healthy"
   ansible.builtin.debug:
