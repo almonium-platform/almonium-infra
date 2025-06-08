@@ -1,18 +1,10 @@
-# ansible/playbook-deploy-almonium-be.yaml
-- name: Deploy Almonium BE Application (Blue/Green with Ansible)
+# This playbook contains two plays, executed sequentially.
+# Play 1: Fixes the host's DNS configuration.
+# Play 2: Deploys the application using the now-corrected host environment.
+
+- name: Play 1 - Fix Host DNS Configuration for Docker
   hosts: "{{ target_host_group }}"
-  gather_facts: false
-  vars:
-    # All --extra-vars from GitHub Actions are available here
-    infra_root: "/home/almonium/infra"
-    project_name_base: "almonium-be"
-    APP_INTERNAL_PORT: "9998"
-
-  tasks:
-
-- name: Fix Docker DNS on systemd-resolved hosts
-  hosts: all # Or specify your target_host_group like staging_servers, production_servers
-  become: yes # Most of these tasks require root privileges
+  become: yes # These tasks require root privileges
   gather_facts: no
 
   tasks:
@@ -43,10 +35,10 @@
           nameserver 8.8.8.8
           nameserver 1.1.1.1
         mode: '0644'
-      notify: Restart systemd-resolved
+      # We don't notify here to avoid a double restart. Flushing handlers is enough.
 
-    # Handlers will run at the end of the play
-    # We flush them here to ensure resolved is restarted before docker
+    # Handlers will run at the end of the play. We flush them here to ensure
+    # resolved is restarted before we try to restart docker.
     - name: Flush handlers to apply systemd-resolved changes
       ansible.builtin.meta: flush_handlers
 
@@ -61,6 +53,18 @@
         name: systemd-resolved
         state: restarted
 
+# --- The second play begins here ---
+
+- name: Play 2 - Deploy Almonium BE Application (Blue/Green)
+  hosts: "{{ target_host_group }}"
+  gather_facts: false
+  vars:
+    # All --extra-vars from GitHub Actions are available here
+    infra_root: "/home/almonium/infra"
+    project_name_base: "almonium-be"
+    APP_INTERNAL_PORT: "9998"
+
+  tasks:
     - name: Determine project name suffix and color file path
       ansible.builtin.set_fact:
         project_name_suffix: "_{{ DEPLOY_ENVIRONMENT }}"
@@ -103,21 +107,12 @@
     - name: Log in to GitHub Container Registry (GHCR)
       community.docker.docker_login:
         registry: ghcr.io
-        username: "{{ DEPLOY_GH_ACTOR }}" # Passed as --extra-var from GH Action
-        password: "{{ DEPLOY_GH_TOKEN }}" # Passed as --extra-var from GH Action
-      # This task should be run once per playbook execution
+        username: "{{ DEPLOY_GH_ACTOR }}"
+        password: "{{ DEPLOY_GH_TOKEN }}"
 
-    # --- Use import_role INSTEAD of include_role ---
     - name: "Deploy TARGET slot: {{ DEPLOY_SLOT }}"
       ansible.builtin.import_role:
         name: deploy_app_slot
-      # When using import_role, variables are inherited from the play's context.
-      # We don't need a separate 'vars:' block here as long as the variables
-      # are already defined as facts or vars in the play. All your set_fact tasks
-      # and the --extra-vars from GitHub Actions make them available.
-      # This simplifies the call and often avoids scoping issues.
-
-    # The tasks from deploy_app_slot/tasks/main.yaml will be executed here now.
 
     - name: "Stop and remove PREVIOUS slot: {{ PREVIOUS_SLOT }}"
       ansible.builtin.command: >-
@@ -133,7 +128,7 @@
         content: "{{ 'green' if DEPLOY_SLOT == 'blue' else 'blue' }}"
         dest: "{{ color_file_path }}"
         mode: '0644'
-      become: yes
+      become: yes # Assuming this needs root, as infra_root is likely root-owned
 
     - name: "Deployment Summary"
       ansible.builtin.debug:
