@@ -1,0 +1,78 @@
+# ansible/roles/deploy_app_slot/templates/app-compose.yaml.j2
+version: '3.8'
+
+services:
+  app:
+    image:
+      ghcr.io/almonium-platform/almonium-be: {{ DEPLOY_IMAGE_TAG }} # Ansible var
+    container_name: app_{{ DEPLOY_ENVIRONMENT }}_{{ DEPLOY_SLOT }} # Ansible vars
+    environment:
+      # Variables passed from Ansible playbook's --extra-vars
+      DEPLOY_IMAGE_TAG: "{{ DEPLOY_IMAGE_TAG }}"
+      DEPLOY_SLOT: "{{ DEPLOY_SLOT }}"
+      DEPLOY_ENVIRONMENT: "{{ DEPLOY_ENVIRONMENT }}"
+      API_HOSTNAME: "{{ API_HOSTNAME }}"
+      SERVER_PORT: "{{ APP_INTERNAL_PORT }}"
+      APP_INTERNAL_PORT: "{{ APP_INTERNAL_PORT }}"
+
+      LOCAL_PORT: "{{ CONF_LOCAL_PORT }}"
+      DEBUG_PORT: "{{ CONF_DEBUG_PORT }}"
+      SPRING_PROFILE: "{{ CONF_SPRING_PROFILE }}"
+      JWT_SECRET: "{{ CONF_JWT_SECRET }}"
+      DB_NAME: "{{ CONF_DB_NAME }}"
+      DB_HOST: "{{ CONF_DB_HOST }}"
+      DB_PORT: "{{ CONF_DB_PORT }}"
+      DB_SCHEMA: "{{ CONF_DB_SCHEMA }}"
+      DB_USERNAME: "{{ CONF_DB_USERNAME }}"
+      DB_PASSWORD: "{{ CONF_DB_PASSWORD }}"
+      RAPID_API_KEY: "{{ CONF_RAPID_API_KEY }}"
+      WORDNIK_KEY: "{{ CONF_WORDNIK_KEY }}"
+      YANDEX_KEY: "{{ CONF_YANDEX_KEY }}"
+      OPENAI_KEY: "{{ CONF_OPENAI_KEY }}"
+      GEMINI_API_KEY: "{{ CONF_GEMINI_API_KEY }}"
+      STRIPE_KEY: "{{ CONF_STRIPE_KEY }}"
+      STRIPE_WEBHOOK_SECRET: "{{ CONF_STRIPE_WEBHOOK_SECRET }}"
+      STREAM_KEY: "{{ CONF_STREAM_KEY }}"
+      STREAM_SECRET: "{{ CONF_STREAM_SECRET }}"
+      GOOGLE_PROJECT_ID: "{{ CONF_GOOGLE_PROJECT_ID }}"
+      GOOGLE_SERVICE_ACCOUNT_KEY_BASE64: "{{ CONF_GOOGLE_SERVICE_ACCOUNT_KEY_BASE64 }}"
+      FIREBASE_STORAGE_BUCKET: "{{ CONF_FIREBASE_STORAGE_BUCKET }}"
+      GOOGLE_ID: "{{ CONF_GOOGLE_ID }}"
+      GOOGLE_SECRET: "{{ CONF_GOOGLE_SECRET }}"
+      FACEBOOK_ID: "{{ CONF_FACEBOOK_ID }}"
+      FACEBOOK_SECRET: "{{ CONF_FACEBOOK_SECRET }}"
+      APPLE_ID: "{{ CONF_APPLE_ID }}"
+      APPLE_SECRET: "{{ CONF_APPLE_SECRET }}"
+      RABBITMQ_HOST: "{{ CONF_RABBITMQ_HOST }}"
+      RABBITMQ_PORT: "{{ CONF_RABBITMQ_PORT }}"
+      RABBITMQ_USER: "{{ CONF_RABBITMQ_USER }}"
+      RABBITMQ_PASS: "{{ CONF_RABBITMQ_PASS }}"
+      MAIL_USERNAME: "{{ CONF_MAIL_USERNAME }}"
+      MAIL_PASSWORD: "{{ CONF_MAIL_PASSWORD }}"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy-net"
+      - "traefik.http.services.app-svc-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}.loadbalancer.server.port={{ APP_INTERNAL_PORT }}"
+      - "traefik.http.routers.app-router-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}.rule=Host(`{{ API_HOSTNAME }}`)"
+      - "traefik.http.routers.app-router-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}.entrypoints=websecure"
+      - "traefik.http.routers.app-router-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}.tls=true"
+      - "traefik.http.routers.app-router-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}.tls.certresolver=porkbun"
+      - "traefik.http.routers.app-router-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}.service=app-svc-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}"
+      - "traefik.http.routers.app-router-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}.priority=100"
+    ports:
+      - "{{ LOCAL_HEALTHCHECK_PORT }}:{{ APP_INTERNAL_PORT }}"
+    networks:
+      - proxy-net
+      - broker-net
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:{{ APP_INTERNAL_PORT }}/api/v1/actuator/health" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+networks:
+  proxy-net:
+    external: true
+  broker-net:
+    external: true

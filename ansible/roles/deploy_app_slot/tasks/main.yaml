@@ -1,0 +1,60 @@
+# ansible/roles/deploy_app_slot/tasks/main.yaml
+# This role expects variables like:
+# - DEPLOY_IMAGE_TAG, DEPLOY_ENVIRONMENT, DEPLOY_SLOT, API_HOSTNAME
+# - APP_INTERNAL_PORT, LOCAL_HEALTHCHECK_PORT
+# - DOCKER_COMPOSE_PROJECT_NAME (e.g., almonium-be_staging)
+# - All CONF_* variables for templating the compose file
+
+- name: "Ensure deployment directory exists for {{ DEPLOY_SLOT }} of {{ DOCKER_COMPOSE_PROJECT_NAME }}"
+  ansible.builtin.file:
+    path: "/home/almonium/deploy_slots/{{ DOCKER_COMPOSE_PROJECT_NAME }}/{{ DEPLOY_SLOT }}" # e.g., /home/almonium/deploy_slots/almonium-be_staging/blue
+    state: directory
+    mode: '0755'
+  become: true # If almonium user doesn't own /home/almonium/deploy_slots
+
+- name: "Template Docker Compose file for {{ DEPLOY_SLOT }} of {{ DOCKER_COMPOSE_PROJECT_NAME }}"
+  ansible.builtin.template:
+    src: app-compose.yaml.j2 # From this role's templates/ directory
+    dest: "/home/almonium/deploy_slots/{{ DOCKER_COMPOSE_PROJECT_NAME }}/{{ DEPLOY_SLOT }}/docker-compose.yaml"
+    mode: '0644'
+  become: true
+
+- name: "Pull Docker image for {{ DEPLOY_SLOT }} of {{ DOCKER_COMPOSE_PROJECT_NAME }}"
+  community.docker.docker_image:
+    name: "ghcr.io/almonium-platform/almonium-be:{{ DEPLOY_IMAGE_TAG }}"
+    source: pull
+  register: pull_result
+  retries: 3
+  delay: 10
+  until: pull_result is succeeded
+
+- name: "Deploy app service for {{ DEPLOY_SLOT }} of {{ DOCKER_COMPOSE_PROJECT_NAME }}"
+  community.docker.docker_compose_v2:
+    project_src: "/home/almonium/deploy_slots/{{ DOCKER_COMPOSE_PROJECT_NAME }}/{{ DEPLOY_SLOT }}"
+    project_name: "{{ DOCKER_COMPOSE_PROJECT_NAME }}_{{ DEPLOY_SLOT }}" # e.g., almonium-be_staging_blue
+    state: present
+    remove_orphans: true
+    pull: false # Image already pulled
+    services:
+      - app
+  register: compose_up_result
+
+- name: "Wait for {{ DEPLOY_SLOT }} of {{ DOCKER_COMPOSE_PROJECT_NAME }} to become healthy"
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ LOCAL_HEALTHCHECK_PORT }}/api/v1/actuator/health"
+    method: GET
+    status_code: 200
+  register: health_check_result
+  until: "'\"status\":\"UP\"' in health_check_result.content | default('')"
+  retries: 60
+  delay: 3
+  ignore_errors: true # Check result manually after loop
+
+- name: "Fail if health check did not succeed for {{ DEPLOY_SLOT }} of {{ DOCKER_COMPOSE_PROJECT_NAME }}"
+  ansible.builtin.fail:
+    msg: "Health check failed for {{ DOCKER_COMPOSE_PROJECT_NAME }}_{{ DEPLOY_SLOT }} on port {{ LOCAL_HEALTHCHECK_PORT }}. Last response: {{ health_check_result.content | default('No content') }}"
+  when: health_check_result is failed or ('"status":"UP"' not in health_check_result.content | default(''))
+
+- name: "Debug: {{ DEPLOY_SLOT }} of {{ DOCKER_COMPOSE_PROJECT_NAME }} is healthy"
+  ansible.builtin.debug:
+    msg: "✅ Container {{ DOCKER_COMPOSE_PROJECT_NAME }}_{{ DEPLOY_SLOT }} (app_{{ DEPLOY_ENVIRONMENT }}_{{ DEPLOY_SLOT }}) is healthy."

@@ -1,0 +1,117 @@
+# ansible/playbook-deploy-almonium-be.yaml
+- name: Deploy Almonium BE Application (Blue/Green with Ansible)
+  hosts: "{{ target_host_group }}" # Passed from GH Actions: 'staging_vm' or 'production_vm'
+  gather_facts: false
+  vars:
+    # These are all expected to be passed as --extra-vars from GitHub Actions
+    # DEPLOY_IMAGE_TAG, DEPLOY_ENVIRONMENT, API_HOSTNAME
+    # All CONF_* variables
+
+    infra_root: "/home/almonium/infra" # Base directory on server
+    project_name_base: "almonium-be"
+    app_internal_port: "9998"
+
+  tasks:
+    - name: Determine project name suffix and color file path
+      set_fact:
+        project_name_suffix: "_{{ DEPLOY_ENVIRONMENT }}"
+        color_file_path: "{{ infra_root }}/.next_color_{{ DEPLOY_ENVIRONMENT }}"
+
+    - name: Read current color for the environment
+      ansible.builtin.slurp:
+        src: "{{ color_file_path }}"
+      register: color_file_content
+      ignore_errors: true # For first deploy
+
+    - name: Set target DEPLOY_SLOT and PREVIOUS_SLOT
+      set_fact:
+        current_color_from_file: "{{ color_file_content.content | b64decode if color_file_content.content else 'green' }}" # Default to deploying blue first
+        # If file says 'green' is next, we deploy 'green'. If 'blue' or empty, we deploy 'blue'.
+        # The file stores the *next* color to deploy. Let's change logic: file stores *current active* color.
+        # NO, let's stick to your original: file stores the *next* color to be deployed.
+        # So if file says "blue", we deploy "blue". If it says "green", we deploy "green".
+        # If file is empty/doesn't exist, we deploy "blue".
+        DEPLOY_SLOT: "{{ color_file_content.content | b64decode if color_file_content.content else 'blue' }}"
+        # This logic determines the PREVIOUS_SLOT based on the one we are about to deploy
+        PREVIOUS_SLOT: "{{ 'green' if (color_file_content.content | b64decode if color_file_content.content else 'blue') == 'blue' else 'blue' }}"
+
+    - name: Set local healthcheck port for target DEPLOY_SLOT
+      set_fact:
+        LOCAL_HEALTHCHECK_PORT: >-
+          {{ (DEPLOY_ENVIRONMENT == 'staging') | ternary(
+               (DEPLOY_SLOT == 'blue' | ternary('9978', '9979')),
+               (DEPLOY_SLOT == 'blue' | ternary('9988', '9989'))
+             ) }}
+
+    - name: Set Docker Compose project name base for environment
+      set_fact:
+        DOCKER_COMPOSE_PROJECT_NAME_ENV_BASE: "{{ project_name_base }}{{ project_name_suffix }}" # e.g., almonium-be_staging
+
+    - name: "Deploy TARGET slot: {{ DEPLOY_SLOT }}"
+      ansible.builtin.include_role:
+        name: deploy_app_slot
+      vars:
+        # Pass all necessary variables to the role for the TARGET slot
+        DEPLOY_SLOT: "{{ DEPLOY_SLOT }}" # e.g., blue
+        LOCAL_HEALTHCHECK_PORT: "{{ LOCAL_HEALTHCHECK_PORT }}"
+        DOCKER_COMPOSE_PROJECT_NAME: "{{ DOCKER_COMPOSE_PROJECT_NAME_ENV_BASE }}" # e.g. almonium-be_staging
+        # Pass through all variables received from GitHub Actions
+        DEPLOY_IMAGE_TAG: "{{ DEPLOY_IMAGE_TAG }}"
+        DEPLOY_ENVIRONMENT: "{{ DEPLOY_ENVIRONMENT }}"
+        API_HOSTNAME: "{{ API_HOSTNAME }}"
+        APP_INTERNAL_PORT: "{{ app_internal_port }}"
+        CONF_LOCAL_PORT: "{{ CONF_LOCAL_PORT }}"
+        CONF_DEBUG_PORT: "{{ CONF_DEBUG_PORT }}"
+        CONF_SPRING_PROFILE: "{{ CONF_SPRING_PROFILE }}"
+        CONF_JWT_SECRET: "{{ CONF_JWT_SECRET }}"
+        CONF_DB_NAME: "{{ CONF_DB_NAME }}"
+        CONF_DB_HOST: "{{ CONF_DB_HOST }}"
+        CONF_DB_PORT: "{{ CONF_DB_PORT }}"
+        CONF_DB_SCHEMA: "{{ CONF_DB_SCHEMA }}"
+        CONF_DB_USERNAME: "{{ CONF_DB_USERNAME }}"
+        CONF_DB_PASSWORD: "{{ CONF_DB_PASSWORD }}"
+        CONF_RAPID_API_KEY: "{{ CONF_RAPID_API_KEY }}"
+        CONF_WORDNIK_KEY: "{{ CONF_WORDNIK_KEY }}"
+        CONF_YANDEX_KEY: "{{ CONF_YANDEX_KEY }}"
+        CONF_OPENAI_KEY: "{{ CONF_OPENAI_KEY }}"
+        CONF_GEMINI_API_KEY: "{{ CONF_GEMINI_API_KEY }}"
+        CONF_STRIPE_KEY: "{{ CONF_STRIPE_KEY }}"
+        CONF_STRIPE_WEBHOOK_SECRET: "{{ CONF_STRIPE_WEBHOOK_SECRET }}"
+        CONF_STREAM_KEY: "{{ CONF_STREAM_KEY }}"
+        CONF_STREAM_SECRET: "{{ CONF_STREAM_SECRET }}"
+        CONF_GOOGLE_PROJECT_ID: "{{ CONF_GOOGLE_PROJECT_ID }}"
+        CONF_GOOGLE_SERVICE_ACCOUNT_KEY_BASE64: "{{ CONF_GOOGLE_SERVICE_ACCOUNT_KEY_BASE64 }}"
+        CONF_FIREBASE_STORAGE_BUCKET: "{{ CONF_FIREBASE_STORAGE_BUCKET }}"
+        CONF_GOOGLE_ID: "{{ CONF_GOOGLE_ID }}"
+        CONF_GOOGLE_SECRET: "{{ CONF_GOOGLE_SECRET }}"
+        CONF_FACEBOOK_ID: "{{ CONF_FACEBOOK_ID }}"
+        CONF_FACEBOOK_SECRET: "{{ CONF_FACEBOOK_SECRET }}"
+        CONF_APPLE_ID: "{{ CONF_APPLE_ID }}"
+        CONF_APPLE_SECRET: "{{ CONF_APPLE_SECRET }}"
+        CONF_RABBITMQ_HOST: "{{ CONF_RABBITMQ_HOST }}"
+        CONF_RABBITMQ_PORT: "{{ CONF_RABBITMQ_PORT }}"
+        CONF_RABBITMQ_USER: "{{ CONF_RABBITMQ_USER }}"
+        CONF_RABBITMQ_PASS: "{{ CONF_RABBITMQ_PASS }}"
+        CONF_MAIL_USERNAME: "{{ CONF_MAIL_USERNAME }}"
+        CONF_MAIL_PASSWORD: "{{ CONF_MAIL_PASSWORD }}"
+
+    - name: "Stop and remove PREVIOUS slot: {{ PREVIOUS_SLOT }}"
+      ansible.builtin.command: >-
+        docker stop app_{{ DEPLOY_ENVIRONMENT }}_{{ PREVIOUS_SLOT }} &&
+        docker rm app_{{ DEPLOY_ENVIRONMENT }}_{{ PREVIOUS_SLOT }}
+      register: stop_previous_result
+      changed_when: "'Error: No such container' not in stop_previous_result.stderr and stop_previous_result.rc == 0"
+      failed_when: false # Don't fail playbook if container doesn't exist or stop fails
+      ignore_errors: true # Continue even if previous slot doesn't exist
+      when: PREVIOUS_SLOT is defined and PREVIOUS_SLOT != ''
+
+    - name: "Update color file to point to next slot: {{ PREVIOUS_SLOT }}"
+      ansible.builtin.copy:
+        content: "{{ PREVIOUS_SLOT }}" # The previous slot is now the next one to be deployed
+        dest: "{{ color_file_path }}"
+        mode: '0644'
+      become: true # If almonium user doesn't own /home/almonium/infra
+
+    - name: "Deployment Summary"
+      ansible.builtin.debug:
+        msg: "✅ Deploy for ENV: [{{ DEPLOY_ENVIRONMENT }}], successfully switched to SLOT: [{{ DEPLOY_SLOT }}] for HOSTNAME: [{{ API_HOSTNAME }}]"
