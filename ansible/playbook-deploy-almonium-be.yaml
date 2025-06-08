@@ -23,17 +23,35 @@
       register: color_file_content
       failed_when: false # Don't fail if file not found, just register a miss
 
-    - name: Set target DEPLOY_SLOT and PREVIOUS_SLOT
-      set_fact:
-        # If slurp failed (file not found) or content is empty, default to 'blue'
+    - name: "Determine initial color based on file content (Step 1)"
+      ansible.builtin.set_fact:
+        # If slurp failed (file not found, so color_file_content.content is not defined)
+        # or content is empty, default _color_from_file to 'blue'.
         # Otherwise, use the decoded content.
         _color_from_file: >-
           {{ color_file_content.content | b64decode
              if color_file_content.content is defined and color_file_content.content != ""
              else 'blue' }}
-        # Ensure DEPLOY_SLOT is strictly 'blue' or 'green'
+
+    - name: "Set target DEPLOY_SLOT and PREVIOUS_SLOT (Step 2)"
+      ansible.builtin.set_fact:
+        # Now _color_from_file is definitely defined from the previous task
         DEPLOY_SLOT: "{{ 'green' if _color_from_file == 'green' else 'blue' }}"
+        PREVIOUS_SLOT: "{{ 'green' if DEPLOY_SLOT == 'blue' else 'blue' }}" # This relies on DEPLOY_SLOT from this same task, may need further split or careful ordering
+
+    # To be absolutely safe with PREVIOUS_SLOT if it depends on the DEPLOY_SLOT set in the *same* task:
+    # It's better to set PREVIOUS_SLOT based on the _color_from_file as well, or in a subsequent task.
+    # Let's refine the previous task for clarity and safety:
+
+    # --- REVISED SLOT DETERMINATION ---
+    - name: "Set target DEPLOY_SLOT"
+      ansible.builtin.set_fact:
+        DEPLOY_SLOT: "{{ 'green' if _color_from_file == 'green' else 'blue' }}"
+
+    - name: "Set PREVIOUS_SLOT based on determined DEPLOY_SLOT"
+      ansible.builtin.set_fact:
         PREVIOUS_SLOT: "{{ 'green' if DEPLOY_SLOT == 'blue' else 'blue' }}"
+    # --- END REVISED SLOT DETERMINATION ---
 
     - name: Set local healthcheck port for target DEPLOY_SLOT
       set_fact:
