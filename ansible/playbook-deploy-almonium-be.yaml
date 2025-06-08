@@ -1,64 +1,88 @@
-- name: Deploy Almonium BE Application (Blue/Green)
+# ansible/playbook-deploy-almonium-be.yaml
+- name: Deploy Almonium BE Application (Blue/Green with Ansible)
   hosts: "{{ target_host_group }}"
   gather_facts: false
   vars:
+    # All --extra-vars from GitHub Actions are available here
     infra_root: "/home/almonium/infra"
     project_name_base: "almonium-be"
     APP_INTERNAL_PORT: "9998"
 
   tasks:
-    - name: Read current deployment color for the environment
+    - name: Determine project name suffix and color file path
+      ansible.builtin.set_fact:
+        project_name_suffix: "_{{ DEPLOY_ENVIRONMENT }}"
+        color_file_path: "{{ infra_root }}/.next_color_{{ DEPLOY_ENVIRONMENT }}"
+
+    - name: Read current color for the environment
       ansible.builtin.slurp:
-        src: "{{ infra_root }}/.next_color_{{ DEPLOY_ENVIRONMENT }}"
+        src: "{{ color_file_path }}"
       register: color_file_content
       failed_when: false
 
-    - name: Determine the color to use from file, defaulting to 'blue'
+    - name: Determine initial color based on file content
       ansible.builtin.set_fact:
-        # If the file exists and has content, use it. Otherwise, the next deployment will be blue.
         _color_from_file: >-
           {{ color_file_content.content | b64decode
              if color_file_content.content is defined and color_file_content.content != ""
              else 'blue' }}
 
-    - name: Set target and previous deployment slots
+    - name: Set target DEPLOY_SLOT
       ansible.builtin.set_fact:
-        DEPLOY_SLOT: "{{ 'green' if _color_from_file == 'blue' else 'blue' }}"
-        PREVIOUS_SLOT: "{{ 'blue' if _color_from_file == 'blue' else 'green' }}"
+        DEPLOY_SLOT: "{{ 'green' if _color_from_file == 'green' else 'blue' }}"
 
-    - name: Set dynamic configuration for the deployment
+    - name: Set PREVIOUS_SLOT based on determined DEPLOY_SLOT
+      ansible.builtin.set_fact:
+        PREVIOUS_SLOT: "{{ 'green' if DEPLOY_SLOT == 'blue' else 'blue' }}"
+
+    - name: Set local healthcheck port for target DEPLOY_SLOT
       ansible.builtin.set_fact:
         LOCAL_HEALTHCHECK_PORT: >-
-          {% if DEPLOY_ENVIRONMENT == 'staging' %}
-            {{ {'blue': '9978', 'green': '9979'}[DEPLOY_SLOT] }}
-          {% else %}
-            {{ {'blue': '9988', 'green': '9989'}[DEPLOY_SLOT] }}
-          {% endif %}
-        DOCKER_COMPOSE_PROJECT_NAME: "{{ project_name_base }}_{{ DEPLOY_ENVIRONMENT }}"
+          {%- if DEPLOY_ENVIRONMENT == 'staging' -%}
+            {{- '9978' if DEPLOY_SLOT == 'blue' else '9979' -}}
+          {%- else -%}
+            {{- '9988' if DEPLOY_SLOT == 'blue' else '9989' -}}
+          {%- endif -%}
+
+    - name: Set Docker Compose project name base for environment
+      ansible.builtin.set_fact:
+        DOCKER_COMPOSE_PROJECT_NAME: "{{ project_name_base }}{{ project_name_suffix }}"
 
     - name: Log in to GitHub Container Registry (GHCR)
       community.docker.docker_login:
         registry: ghcr.io
-        username: "{{ DEPLOY_GH_ACTOR }}"
-        password: "{{ DEPLOY_GH_TOKEN }}"
-      run_once: true
+        username: "{{ DEPLOY_GH_ACTOR }}" # Passed as --extra-var from GH Action
+        password: "{{ DEPLOY_GH_TOKEN }}" # Passed as --extra-var from GH Action
+      # This task should be run once per playbook execution
 
-    - name: Deploy new application to the TARGET slot '{{ DEPLOY_SLOT }}'
+    # --- Use import_role INSTEAD of include_role ---
+    - name: "Deploy TARGET slot: {{ DEPLOY_SLOT }}"
       ansible.builtin.import_role:
         name: deploy_app_slot
+      # When using import_role, variables are inherited from the play's context.
+      # We don't need a separate 'vars:' block here as long as the variables
+      # are already defined as facts or vars in the play. All your set_fact tasks
+      # and the --extra-vars from GitHub Actions make them available.
+      # This simplifies the call and often avoids scoping issues.
 
-    - name: Stop and remove the PREVIOUS slot '{{ PREVIOUS_SLOT }}'
-      community.docker.docker_container:
-        name: "app_{{ DEPLOY_ENVIRONMENT }}_{{ PREVIOUS_SLOT }}"
-        state: absent
+    # The tasks from deploy_app_slot/tasks/main.yaml will be executed here now.
 
-    - name: Update color file to point to the new active slot for next deployment
+    - name: "Stop and remove PREVIOUS slot: {{ PREVIOUS_SLOT }}"
+      ansible.builtin.command: >-
+        docker stop app_{{ DEPLOY_ENVIRONMENT }}_{{ PREVIOUS_SLOT }} &&
+        docker rm app_{{ DEPLOY_ENVIRONMENT }}_{{ PREVIOUS_SLOT }}
+      register: stop_previous_result
+      changed_when: "'Error: No such container' not in stop_previous_result.stderr | default('') and stop_previous_result.rc == 0"
+      failed_when: false
+      when: PREVIOUS_SLOT is defined and PREVIOUS_SLOT != '' and PREVIOUS_SLOT != DEPLOY_SLOT
+
+    - name: "Update color file to point to next slot"
       ansible.builtin.copy:
-        content: "{{ DEPLOY_SLOT }}"
-        dest: "{{ infra_root }}/.next_color_{{ DEPLOY_ENVIRONMENT }}"
+        content: "{{ 'green' if DEPLOY_SLOT == 'blue' else 'blue' }}"
+        dest: "{{ color_file_path }}"
         mode: '0644'
       become: yes
 
-    - name: Print deployment summary
+    - name: "Deployment Summary"
       ansible.builtin.debug:
-        msg: "✅ Deploy for ENV [{{ DEPLOY_ENVIRONMENT }}] successful. Active slot is now [{{ DEPLOY_SLOT }}] on host [{{ API_HOSTNAME }}]."
+        msg: "✅ Deploy for ENV: [{{ DEPLOY_ENVIRONMENT }}], successfully switched to SLOT: [{{ DEPLOY_SLOT }}] for HOSTNAME: [{{ API_HOSTNAME }}]"

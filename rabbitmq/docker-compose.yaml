@@ -21,5 +21,5 @@ volumes:
   rabbitmq-data:
 
 networks:
-  broker-net:
-    external: true
+  default:
+    name: broker-net
