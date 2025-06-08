@@ -4,6 +4,13 @@
 # - APP_INTERNAL_PORT, LOCAL_HEALTHCHECK_PORT
 # - DOCKER_COMPOSE_PROJECT_NAME (e.g., almonium-be_staging)
 # - All CONF_* variables for templating the compose file
+- name: "ROLE DEBUG: Display received variables at start of role" # Static name
+  ansible.builtin.debug:
+    msg:
+      - "ROLE - DEPLOY_SLOT: {{ DEPLOY_SLOT | default('UNDEFINED IN ROLE') }}"
+      - "ROLE - DOCKER_COMPOSE_PROJECT_NAME: {{ DOCKER_COMPOSE_PROJECT_NAME | default('UNDEFINED IN ROLE') }}"
+      - "ROLE - DEPLOY_ENVIRONMENT: {{ DEPLOY_ENVIRONMENT | default('UNDEFINED IN ROLE') }}"
+      - "ROLE - DEPLOY_IMAGE_TAG: {{ DEPLOY_IMAGE_TAG | default('UNDEFINED IN ROLE') }}"
 
 - name: "Ensure deployment directory exists for {{ DEPLOY_SLOT }} of {{ DOCKER_COMPOSE_PROJECT_NAME }}"
   ansible.builtin.file:
