@@ -41,7 +41,7 @@
     project_name: "{{ DOCKER_COMPOSE_PROJECT_NAME }}_{{ DEPLOY_SLOT }}" # e.g., almonium-be_staging_blue
     state: present
     remove_orphans: true
-    pull: false # Image already pulled
+    pull: "never"
     services:
       - app
   register: compose_up_result
