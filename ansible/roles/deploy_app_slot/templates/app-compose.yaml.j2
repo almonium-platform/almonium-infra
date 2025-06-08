@@ -55,20 +55,16 @@ services:
       - "traefik.http.routers.app-router-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}.tls.certresolver=porkbun"
       - "traefik.http.routers.app-router-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}.service=app-svc-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}"
       - "traefik.http.routers.app-router-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}.priority=100"
-    command: [ "tail", "-f", "/dev/null" ]
     ports:
       - "{{ LOCAL_HEALTHCHECK_PORT }}:{{ APP_INTERNAL_PORT }}"
-    dns:
-      - 8.8.8.8
-      - 1.1.1.1
     networks:
       - proxy-net
       - broker-net
-{#    healthcheck:#}
-{#      test: [ "CMD", "curl", "-f", "http://localhost:{{ APP_INTERNAL_PORT }}/api/v1/actuator/health" ]#}
-{#      interval: 10s#}
-{#      timeout: 3s#}
-{#      retries: 3#}
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:{{ APP_INTERNAL_PORT }}/api/v1/actuator/health" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
     restart: unless-stopped
 
 networks:
