@@ -20,29 +20,29 @@
       register: color_file_content
       failed_when: false
 
-    - name: "Determine initial color based on file content"
+    - name: Determine initial color based on file content
       ansible.builtin.set_fact:
         _color_from_file: >-
           {{ color_file_content.content | b64decode
              if color_file_content.content is defined and color_file_content.content != ""
              else 'blue' }}
 
-    - name: "Set target DEPLOY_SLOT"
+    - name: Set target DEPLOY_SLOT
       ansible.builtin.set_fact:
         DEPLOY_SLOT: "{{ 'green' if _color_from_file == 'green' else 'blue' }}"
 
-    - name: "Set PREVIOUS_SLOT based on determined DEPLOY_SLOT"
+    - name: Set PREVIOUS_SLOT based on determined DEPLOY_SLOT
       ansible.builtin.set_fact:
         PREVIOUS_SLOT: "{{ 'green' if DEPLOY_SLOT == 'blue' else 'blue' }}"
 
-    - name: "Set local healthcheck port for target DEPLOY_SLOT"
+    - name: Set local healthcheck port for target DEPLOY_SLOT
       ansible.builtin.set_fact:
         LOCAL_HEALTHCHECK_PORT: >-
-          {% if DEPLOY_ENVIRONMENT == 'staging' %}
-            {{ '9978' if DEPLOY_SLOT == 'blue' else '9979' }}
-          {% else %}
-            {{ '9988' if DEPLOY_SLOT == 'blue' else '9989' }}
-          {% endif %}
+          {%- if DEPLOY_ENVIRONMENT == 'staging' -%}
+            {{- '9978' if DEPLOY_SLOT == 'blue' else '9979' -}}
+          {%- else -%}
+            {{- '9988' if DEPLOY_SLOT == 'blue' else '9989' -}}
+          {%- endif -%}
 
     - name: Set Docker Compose project name base for environment
       ansible.builtin.set_fact:
