@@ -1,0 +1,38 @@
+local_port: "9998"
+debug_port: "5005"
+
+db_name: "postgres"
+db_port: "5432"
+
+apple_id: "com.almonium"
+facebook_id: "1311434966049556"
+google_id: "33380019461-l4hq3eto00vvvgprtadahm5o2tqj65ti.apps.googleusercontent.com"
+google_project_id: "linguatool"
+firebase_storage_bucket: "almonium.firebasestorage.app"
+
+mail_username: "noreply@almonium.com"
+
+rabbitmq_host: "rabbitmq"
+rabbitmq_port: "5672"
+
+# Secrets Structure
+db_host: ""
+db_username: ""
+db_password: ""
+
+apple_secret: ""
+facebook_secret: ""
+google_secret: ""
+
+google_service_account_key_base64: ""
+
+mail_password: ""
+
+rabbitmq_user: ""
+rabbitmq_pass: ""
+
+openai_key: ""
+gemini_api_key: ""
+rapid_api_key: ""
+wordnik_key: ""
+yandex_key: ""

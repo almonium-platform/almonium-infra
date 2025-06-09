@@ -5,7 +5,7 @@
     # All --extra-vars from GitHub Actions are available here
     infra_root: "/home/almonium/infra"
     project_name_base: "almonium-be"
-    APP_INTERNAL_PORT: "9998"
+    app_internal_port: "9998"
 
   tasks:
     - name: Determine project name suffix and color file path

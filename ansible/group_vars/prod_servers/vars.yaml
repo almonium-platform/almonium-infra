@@ -1,0 +1,11 @@
+api_hostname: "api.almonium.app"
+db_schema: "prod"
+environment_name: "prod"
+spring_profile: "prod"
+
+# Secrets Structure
+jwt_secret: ""
+stream_key: ""
+stream_secret: ""
+stripe_key: ""
+stripe_webhook_secret: ""

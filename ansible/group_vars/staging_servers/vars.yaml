@@ -1,0 +1,11 @@
+api_hostname: "staging.api.almonium.app"
+db_schema: "staging"
+environment_name: "staging"
+spring_profile: "staging"
+
+# Secrets Structure
+jwt_secret: ""
+stream_key: ""
+stream_secret: ""
+stripe_key: ""
+stripe_webhook_secret: ""
