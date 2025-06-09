@@ -84,4 +84,4 @@
 
     - name: "Deployment Summary"
       ansible.builtin.debug:
-        msg: "✅ Deploy for ENV: [{{ deploy_environment }}], successfully switched to SLOT: [{{ deploy_slot }}] for HOSTNAME: [{{ API_HOSTNAME }}]"
+        msg: "✅ Deploy for ENV: [{{ deploy_environment }}], successfully switched to SLOT: [{{ deploy_slot }}] for HOSTNAME: [{{ api_hostname }}]"
