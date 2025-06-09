@@ -1,12 +1,12 @@
 # ansible/roles/deploy_app_slot/templates/app-compose.yaml.j2
 services:
   app:
-    image: 'ghcr.io/almonium-platform/almonium-be:{{ DEPLOY_IMAGE_TAG }}'
-    container_name: app_{{ DEPLOY_ENVIRONMENT }}_{{ DEPLOY_SLOT }}
+    image: 'ghcr.io/almonium-platform/almonium-be:{{ deploy_image_tag }}'
+    container_name: app_{{ deploy_environment }}_{{ deploy_slot }}
     environment:
-      DEPLOY_IMAGE_TAG: "{{ DEPLOY_IMAGE_TAG }}"
-      DEPLOY_SLOT: "{{ DEPLOY_SLOT }}"
-      DEPLOY_ENVIRONMENT: "{{ DEPLOY_ENVIRONMENT }}"
+      DEPLOY_IMAGE_TAG: "{{ deploy_image_tag }}"
+      DEPLOY_SLOT: "{{ deploy_slot }}"
+      DEPLOY_ENVIRONMENT: "{{ deploy_environment }}"
       APP_INTERNAL_PORT: "{{ app_internal_port }}"
       SERVER_PORT: "{{ app_internal_port }}"
       API_HOSTNAME: "{{ api_hostname }}"
@@ -47,13 +47,13 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy-net"
-      - "traefik.http.services.app-svc-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}.loadbalancer.server.port={{ APP_INTERNAL_PORT }}"
-      - "traefik.http.routers.app-router-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}.rule=Host(`{{ API_HOSTNAME }}`)"
-      - "traefik.http.routers.app-router-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}.entrypoints=websecure"
-      - "traefik.http.routers.app-router-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}.tls=true"
-      - "traefik.http.routers.app-router-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}.tls.certresolver=porkbun"
-      - "traefik.http.routers.app-router-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}.service=app-svc-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}"
-      - "traefik.http.routers.app-router-{{ DEPLOY_ENVIRONMENT }}-{{ DEPLOY_SLOT }}.priority=100"
+      - "traefik.http.services.app-svc-{{ deploy_environment }}-{{ deploy_slot }}.loadbalancer.server.port={{ app_internal_port }}"
+      - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.rule=Host(`{{ api_hostname }}`)"
+      - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.entrypoints=websecure"
+      - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.tls=true"
+      - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.tls.certresolver=porkbun"
+      - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.service=app-svc-{{ deploy_environment }}-{{ deploy_slot }}"
+      - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.priority=100"
     ports:
       - "{{ LOCAL_HEALTHCHECK_PORT }}:{{ APP_INTERNAL_PORT }}"
     networks:

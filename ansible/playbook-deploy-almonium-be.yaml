@@ -10,8 +10,8 @@
   tasks:
     - name: Determine project name suffix and color file path
       ansible.builtin.set_fact:
-        project_name_suffix: "_{{ DEPLOY_ENVIRONMENT }}"
-        color_file_path: "{{ infra_root }}/.next_color_{{ DEPLOY_ENVIRONMENT }}"
+        project_name_suffix: "_{{ deploy_environment }}"
+        color_file_path: "{{ infra_root }}/.next_color_{{ deploy_environment }}"
 
     - name: Read current color for the environment
       ansible.builtin.slurp:
@@ -26,21 +26,21 @@
              if color_file_content.content is defined and color_file_content.content != ""
              else 'blue' }}
 
-    - name: Set target DEPLOY_SLOT
+    - name: Set target deploy_slot
       ansible.builtin.set_fact:
-        DEPLOY_SLOT: "{{ 'green' if _color_from_file == 'green' else 'blue' }}"
+        deploy_slot: "{{ 'green' if _color_from_file == 'green' else 'blue' }}"
 
-    - name: Set PREVIOUS_SLOT based on determined DEPLOY_SLOT
+    - name: Set PREVIOUS_SLOT based on determined deploy_slot
       ansible.builtin.set_fact:
-        PREVIOUS_SLOT: "{{ 'green' if DEPLOY_SLOT == 'blue' else 'blue' }}"
+        PREVIOUS_SLOT: "{{ 'green' if deploy_slot == 'blue' else 'blue' }}"
 
-    - name: Set local healthcheck port for target DEPLOY_SLOT
+    - name: Set local healthcheck port for target deploy_slot
       ansible.builtin.set_fact:
         LOCAL_HEALTHCHECK_PORT: >-
-          {%- if DEPLOY_ENVIRONMENT == 'staging' -%}
-            {{- '9978' if DEPLOY_SLOT == 'blue' else '9979' -}}
+          {%- if deploy_environment == 'staging' -%}
+            {{- '9978' if deploy_slot == 'blue' else '9979' -}}
           {%- else -%}
-            {{- '9988' if DEPLOY_SLOT == 'blue' else '9989' -}}
+            {{- '9988' if deploy_slot == 'blue' else '9989' -}}
           {%- endif -%}
 
     - name: Set Docker Compose project name base for environment
@@ -50,12 +50,12 @@
     - name: Log in to GitHub Container Registry (GHCR)
       community.docker.docker_login:
         registry: ghcr.io
-        username: "{{ DEPLOY_GH_ACTOR }}" # Passed as --extra-var from GH Action
-        password: "{{ DEPLOY_GH_TOKEN }}" # Passed as --extra-var from GH Action
+        username: "{{ deploy_gh_actor }}" # Passed as --extra-var from GH Action
+        password: "{{ deploy_gh_token }}" # Passed as --extra-var from GH Action
       # This task should be run once per playbook execution
 
     # --- Use import_role INSTEAD of include_role ---
-    - name: "Deploy TARGET slot: {{ DEPLOY_SLOT }}"
+    - name: "Deploy TARGET slot: {{ deploy_slot }}"
       ansible.builtin.import_role:
         name: deploy_app_slot
       # When using import_role, variables are inherited from the play's context.
@@ -68,20 +68,20 @@
 
     - name: "Stop and remove PREVIOUS slot: {{ PREVIOUS_SLOT }}"
       ansible.builtin.command: >-
-        docker stop app_{{ DEPLOY_ENVIRONMENT }}_{{ PREVIOUS_SLOT }} &&
-        docker rm app_{{ DEPLOY_ENVIRONMENT }}_{{ PREVIOUS_SLOT }}
+        docker stop app_{{ deploy_environment }}_{{ PREVIOUS_SLOT }} &&
+        docker rm app_{{ deploy_environment }}_{{ PREVIOUS_SLOT }}
       register: stop_previous_result
       changed_when: "'Error: No such container' not in stop_previous_result.stderr | default('') and stop_previous_result.rc == 0"
       failed_when: false
-      when: PREVIOUS_SLOT is defined and PREVIOUS_SLOT != '' and PREVIOUS_SLOT != DEPLOY_SLOT
+      when: PREVIOUS_SLOT is defined and PREVIOUS_SLOT != '' and PREVIOUS_SLOT != deploy_slot
 
     - name: "Update color file to point to next slot"
       ansible.builtin.copy:
-        content: "{{ 'green' if DEPLOY_SLOT == 'blue' else 'blue' }}"
+        content: "{{ 'green' if deploy_slot == 'blue' else 'blue' }}"
         dest: "{{ color_file_path }}"
         mode: '0644'
       become: yes
 
     - name: "Deployment Summary"
       ansible.builtin.debug:
-        msg: "✅ Deploy for ENV: [{{ DEPLOY_ENVIRONMENT }}], successfully switched to SLOT: [{{ DEPLOY_SLOT }}] for HOSTNAME: [{{ API_HOSTNAME }}]"
+        msg: "✅ Deploy for ENV: [{{ deploy_environment }}], successfully switched to SLOT: [{{ deploy_slot }}] for HOSTNAME: [{{ API_HOSTNAME }}]"
