@@ -55,12 +55,12 @@ services:
       - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.service=app-svc-{{ deploy_environment }}-{{ deploy_slot }}"
       - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.priority=100"
     ports:
-      - "{{ local_healthcheck_port }}:{{ APP_INTERNAL_PORT }}"
+      - "{{ local_healthcheck_port }}:{{ app_internal_port }}"
     networks:
       - proxy-net
       - broker-net
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:{{ APP_INTERNAL_PORT }}/api/v1/actuator/health" ]
+      test: [ "CMD", "curl", "-f", "http://localhost:{{ app_internal_port }}/api/v1/actuator/health" ]
       interval: 10s
       timeout: 3s
       retries: 3
