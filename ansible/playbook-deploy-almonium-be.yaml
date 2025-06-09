@@ -30,13 +30,13 @@
       ansible.builtin.set_fact:
         deploy_slot: "{{ 'green' if _color_from_file == 'green' else 'blue' }}"
 
-    - name: Set PREVIOUS_SLOT based on determined deploy_slot
+    - name: Set previous_slot based on determined deploy_slot
       ansible.builtin.set_fact:
-        PREVIOUS_SLOT: "{{ 'green' if deploy_slot == 'blue' else 'blue' }}"
+        previous_slot: "{{ 'green' if deploy_slot == 'blue' else 'blue' }}"
 
     - name: Set local healthcheck port for target deploy_slot
       ansible.builtin.set_fact:
-        LOCAL_HEALTHCHECK_PORT: >-
+        local_healthcheck_port: >-
           {%- if deploy_environment == 'staging' -%}
             {{- '9978' if deploy_slot == 'blue' else '9979' -}}
           {%- else -%}
@@ -45,7 +45,7 @@
 
     - name: Set Docker Compose project name base for environment
       ansible.builtin.set_fact:
-        DOCKER_COMPOSE_PROJECT_NAME: "{{ project_name_base }}{{ project_name_suffix }}"
+        docker_compose_project_name: "{{ project_name_base }}{{ project_name_suffix }}"
 
     - name: Log in to GitHub Container Registry (GHCR)
       community.docker.docker_login:
@@ -66,14 +66,14 @@
 
     # The tasks from deploy_app_slot/tasks/main.yaml will be executed here now.
 
-    - name: "Stop and remove PREVIOUS slot: {{ PREVIOUS_SLOT }}"
+    - name: "Stop and remove PREVIOUS slot: {{ previous_slot }}"
       ansible.builtin.command: >-
-        docker stop app_{{ deploy_environment }}_{{ PREVIOUS_SLOT }} &&
-        docker rm app_{{ deploy_environment }}_{{ PREVIOUS_SLOT }}
+        docker stop app_{{ deploy_environment }}_{{ previous_slot }} &&
+        docker rm app_{{ deploy_environment }}_{{ previous_slot }}
       register: stop_previous_result
       changed_when: "'Error: No such container' not in stop_previous_result.stderr | default('') and stop_previous_result.rc == 0"
       failed_when: false
-      when: PREVIOUS_SLOT is defined and PREVIOUS_SLOT != '' and PREVIOUS_SLOT != deploy_slot
+      when: previous_slot is defined and previous_slot != '' and previous_slot != deploy_slot
 
     - name: "Update color file to point to next slot"
       ansible.builtin.copy:

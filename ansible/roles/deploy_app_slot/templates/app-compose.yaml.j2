@@ -38,7 +38,7 @@ services:
       FACEBOOK_SECRET: "{{ facebook_secret }}"
       APPLE_ID: "{{ apple_id }}"
       APPLE_SECRET: "{{ apple_secret }}"
-      RABBITMQ_HOST: "{{ RABBITMQ_HOST }}"
+      RABBITMQ_HOST: "{{ rabbitmq_host }}"
       RABBITMQ_PORT: "{{ rabbitmq_port }}"
       RABBITMQ_USER: "{{ rabbitmq_user }}"
       RABBITMQ_PASS: "{{ rabbitmq_pass }}"
@@ -55,7 +55,7 @@ services:
       - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.service=app-svc-{{ deploy_environment }}-{{ deploy_slot }}"
       - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.priority=100"
     ports:
-      - "{{ LOCAL_HEALTHCHECK_PORT }}:{{ APP_INTERNAL_PORT }}"
+      - "{{ local_healthcheck_port }}:{{ APP_INTERNAL_PORT }}"
     networks:
       - proxy-net
       - broker-net

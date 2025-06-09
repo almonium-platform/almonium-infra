@@ -2,25 +2,25 @@
   ansible.builtin.debug:
     msg:
       - "ROLE - deploy_slot: {{ deploy_slot | default('UNDEFINED IN ROLE') }}"
-      - "ROLE - DOCKER_COMPOSE_PROJECT_NAME: {{ DOCKER_COMPOSE_PROJECT_NAME | default('UNDEFINED IN ROLE') }}"
+      - "ROLE - docker_compose_project_name: {{ docker_compose_project_name | default('UNDEFINED IN ROLE') }}"
       - "ROLE - deploy_environment: {{ deploy_environment | default('UNDEFINED IN ROLE') }}"
       - "ROLE - deploy_image_tag: {{ deploy_image_tag | default('UNDEFINED IN ROLE') }}"
 
-- name: "Ensure deployment directory exists for {{ deploy_slot }} of {{ DOCKER_COMPOSE_PROJECT_NAME }}"
+- name: "Ensure deployment directory exists for {{ deploy_slot }} of {{ docker_compose_project_name }}"
   ansible.builtin.file:
-    path: "/home/almonium/deploy_slots/{{ DOCKER_COMPOSE_PROJECT_NAME }}/{{ deploy_slot }}"
+    path: "/home/almonium/deploy_slots/{{ docker_compose_project_name }}/{{ deploy_slot }}"
     state: directory
     mode: '0755'
   become: true
 
-- name: "Template Docker Compose file for {{ deploy_slot }} of {{ DOCKER_COMPOSE_PROJECT_NAME }}"
+- name: "Template Docker Compose file for {{ deploy_slot }} of {{ docker_compose_project_name }}"
   ansible.builtin.template:
     src: app-compose.yaml.j2
-    dest: "/home/almonium/deploy_slots/{{ DOCKER_COMPOSE_PROJECT_NAME }}/{{ deploy_slot }}/docker-compose.yaml"
+    dest: "/home/almonium/deploy_slots/{{ docker_compose_project_name }}/{{ deploy_slot }}/docker-compose.yaml"
     mode: '0644'
   become: true
 
-- name: "Pull Docker image for {{ deploy_slot }} of {{ DOCKER_COMPOSE_PROJECT_NAME }}"
+- name: "Pull Docker image for {{ deploy_slot }} of {{ docker_compose_project_name }}"
   community.docker.docker_image:
     name: "ghcr.io/almonium-platform/almonium-be:{{ deploy_image_tag }}"
     source: pull
@@ -29,10 +29,10 @@
   delay: 10
   until: pull_result is succeeded
 
-- name: "Deploy app service for {{ deploy_slot }} of {{ DOCKER_COMPOSE_PROJECT_NAME }}"
+- name: "Deploy app service for {{ deploy_slot }} of {{ docker_compose_project_name }}"
   community.docker.docker_compose_v2:
-    project_src: "/home/almonium/deploy_slots/{{ DOCKER_COMPOSE_PROJECT_NAME }}/{{ deploy_slot }}"
-    project_name: "{{ DOCKER_COMPOSE_PROJECT_NAME }}_{{ deploy_slot }}"
+    project_src: "/home/almonium/deploy_slots/{{ docker_compose_project_name }}/{{ deploy_slot }}"
+    project_name: "{{ docker_compose_project_name }}_{{ deploy_slot }}"
     state: present
     remove_orphans: true
     pull: "never"
@@ -42,7 +42,7 @@
 
 - name: "Wait for {{ deploy_slot }} to become healthy"
   ansible.builtin.uri:
-    url: "http://127.0.0.1:{{ LOCAL_HEALTHCHECK_PORT }}/api/v1/actuator/health"
+    url: "http://127.0.0.1:{{ local_healthcheck_port }}/api/v1/actuator/health"
     method: GET
   register: health_check_result
   until: health_check_result.json is defined and health_check_result.json.status == "UP"
@@ -53,10 +53,10 @@
 - name: "Fail if health check did not succeed for {{ deploy_slot }}"
   ansible.builtin.fail:
     msg: |
-      Health check failed for {{ DOCKER_COMPOSE_PROJECT_NAME }}_{{ deploy_slot }} on port {{ LOCAL_HEALTHCHECK_PORT }}.
+      Health check failed for {{ docker_compose_project_name }}_{{ deploy_slot }} on port {{ local_healthcheck_port }}.
       Application did not report 'UP' status. Last response: {{ health_check_result.content | default('No content') }}
   when: health_check_result.json is not defined or health_check_result.json.status != "UP"
 
-- name: "Debug: {{ deploy_slot }} of {{ DOCKER_COMPOSE_PROJECT_NAME }} is healthy"
+- name: "Debug: {{ deploy_slot }} of {{ docker_compose_project_name }} is healthy"
   ansible.builtin.debug:
-    msg: "✅ Container {{ DOCKER_COMPOSE_PROJECT_NAME }}_{{ deploy_slot }} (app_{{ deploy_environment }}_{{ deploy_slot }}) is healthy."
+    msg: "✅ Container {{ docker_compose_project_name }}_{{ deploy_slot }} (app_{{ deploy_environment }}_{{ deploy_slot }}) is healthy."
