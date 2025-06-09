@@ -1,38 +1,38 @@
-- name: "ROLE DEBUG: Display received variables at start of role" # Static name
+- name: "ROLE DEBUG: Display received variables at start of role"
   ansible.builtin.debug:
     msg:
-      - "ROLE - DEPLOY_SLOT: {{ DEPLOY_SLOT | default('UNDEFINED IN ROLE') }}"
+      - "ROLE - deploy_slot: {{ deploy_slot | default('UNDEFINED IN ROLE') }}"
       - "ROLE - DOCKER_COMPOSE_PROJECT_NAME: {{ DOCKER_COMPOSE_PROJECT_NAME | default('UNDEFINED IN ROLE') }}"
-      - "ROLE - DEPLOY_ENVIRONMENT: {{ DEPLOY_ENVIRONMENT | default('UNDEFINED IN ROLE') }}"
-      - "ROLE - DEPLOY_IMAGE_TAG: {{ DEPLOY_IMAGE_TAG | default('UNDEFINED IN ROLE') }}"
+      - "ROLE - deploy_environment: {{ deploy_environment | default('UNDEFINED IN ROLE') }}"
+      - "ROLE - deploy_image_tag: {{ deploy_image_tag | default('UNDEFINED IN ROLE') }}"
 
-- name: "Ensure deployment directory exists for {{ DEPLOY_SLOT }} of {{ DOCKER_COMPOSE_PROJECT_NAME }}"
+- name: "Ensure deployment directory exists for {{ deploy_slot }} of {{ DOCKER_COMPOSE_PROJECT_NAME }}"
   ansible.builtin.file:
-    path: "/home/almonium/deploy_slots/{{ DOCKER_COMPOSE_PROJECT_NAME }}/{{ DEPLOY_SLOT }}" # e.g., /home/almonium/deploy_slots/almonium-be_staging/blue
+    path: "/home/almonium/deploy_slots/{{ DOCKER_COMPOSE_PROJECT_NAME }}/{{ deploy_slot }}"
     state: directory
     mode: '0755'
   become: true
 
-- name: "Template Docker Compose file for {{ DEPLOY_SLOT }} of {{ DOCKER_COMPOSE_PROJECT_NAME }}"
+- name: "Template Docker Compose file for {{ deploy_slot }} of {{ DOCKER_COMPOSE_PROJECT_NAME }}"
   ansible.builtin.template:
     src: app-compose.yaml.j2
-    dest: "/home/almonium/deploy_slots/{{ DOCKER_COMPOSE_PROJECT_NAME }}/{{ DEPLOY_SLOT }}/docker-compose.yaml"
+    dest: "/home/almonium/deploy_slots/{{ DOCKER_COMPOSE_PROJECT_NAME }}/{{ deploy_slot }}/docker-compose.yaml"
     mode: '0644'
   become: true
 
-- name: "Pull Docker image for {{ DEPLOY_SLOT }} of {{ DOCKER_COMPOSE_PROJECT_NAME }}"
+- name: "Pull Docker image for {{ deploy_slot }} of {{ DOCKER_COMPOSE_PROJECT_NAME }}"
   community.docker.docker_image:
-    name: "ghcr.io/almonium-platform/almonium-be:{{ DEPLOY_IMAGE_TAG }}"
+    name: "ghcr.io/almonium-platform/almonium-be:{{ deploy_image_tag }}"
     source: pull
   register: pull_result
   retries: 3
   delay: 10
   until: pull_result is succeeded
 
-- name: "Deploy app service for {{ DEPLOY_SLOT }} of {{ DOCKER_COMPOSE_PROJECT_NAME }}"
+- name: "Deploy app service for {{ deploy_slot }} of {{ DOCKER_COMPOSE_PROJECT_NAME }}"
   community.docker.docker_compose_v2:
-    project_src: "/home/almonium/deploy_slots/{{ DOCKER_COMPOSE_PROJECT_NAME }}/{{ DEPLOY_SLOT }}"
-    project_name: "{{ DOCKER_COMPOSE_PROJECT_NAME }}_{{ DEPLOY_SLOT }}" # e.g., almonium-be_staging_blue
+    project_src: "/home/almonium/deploy_slots/{{ DOCKER_COMPOSE_PROJECT_NAME }}/{{ deploy_slot }}"
+    project_name: "{{ DOCKER_COMPOSE_PROJECT_NAME }}_{{ deploy_slot }}"
     state: present
     remove_orphans: true
     pull: "never"
@@ -40,7 +40,7 @@
       - app
   register: compose_up_result
 
-- name: "Wait for {{ DEPLOY_SLOT }} to become healthy"
+- name: "Wait for {{ deploy_slot }} to become healthy"
   ansible.builtin.uri:
     url: "http://127.0.0.1:{{ LOCAL_HEALTHCHECK_PORT }}/api/v1/actuator/health"
     method: GET
@@ -50,13 +50,13 @@
   delay: 3
   ignore_errors: true
 
-- name: "Fail if health check did not succeed for {{ DEPLOY_SLOT }}"
+- name: "Fail if health check did not succeed for {{ deploy_slot }}"
   ansible.builtin.fail:
     msg: |
-      Health check failed for {{ DOCKER_COMPOSE_PROJECT_NAME }}_{{ DEPLOY_SLOT }} on port {{ LOCAL_HEALTHCHECK_PORT }}.
+      Health check failed for {{ DOCKER_COMPOSE_PROJECT_NAME }}_{{ deploy_slot }} on port {{ LOCAL_HEALTHCHECK_PORT }}.
       Application did not report 'UP' status. Last response: {{ health_check_result.content | default('No content') }}
   when: health_check_result.json is not defined or health_check_result.json.status != "UP"
 
-- name: "Debug: {{ DEPLOY_SLOT }} of {{ DOCKER_COMPOSE_PROJECT_NAME }} is healthy"
+- name: "Debug: {{ deploy_slot }} of {{ DOCKER_COMPOSE_PROJECT_NAME }} is healthy"
   ansible.builtin.debug:
-    msg: "✅ Container {{ DOCKER_COMPOSE_PROJECT_NAME }}_{{ DEPLOY_SLOT }} (app_{{ DEPLOY_ENVIRONMENT }}_{{ DEPLOY_SLOT }}) is healthy."
+    msg: "✅ Container {{ DOCKER_COMPOSE_PROJECT_NAME }}_{{ deploy_slot }} (app_{{ deploy_environment }}_{{ deploy_slot }}) is healthy."
