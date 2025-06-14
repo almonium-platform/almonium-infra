@@ -1,3 +1,8 @@
+- name: "ROLE DEBUG: What is the value of api_hostname?"
+  ansible.builtin.debug:
+    msg: "The value of api_hostname is '{{ api_hostname }}' for deploy_environment '{{ deploy_environment }}'"
+  run_once: true # Ensures it only runs once per play, not once per host
+
 - name: "ROLE DEBUG: Display received variables at start of role"
   ansible.builtin.debug:
     msg:
