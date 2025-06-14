@@ -48,10 +48,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy-net"
-      - "traefik.http.middlewares.strip-api-prefix-{{ deploy_environment }}-{{ deploy_slot }}.stripprefix.prefixes={{ context_path }}"
-      - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.rule=Host(`{{ api_hostname }}`) && PathPrefix(`{{ context_path }}`)"
-      - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.middlewares=strip-api-prefix-{{ deploy_environment }}-{{ deploy_slot }}"
       - "traefik.http.services.app-svc-{{ deploy_environment }}-{{ deploy_slot }}.loadbalancer.server.port={{ app_internal_port }}"
+      - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.rule=Host(`{{ api_hostname }}`)"
       - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.entrypoints=websecure"
       - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.tls=true"
       - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.tls.certresolver=porkbun"
