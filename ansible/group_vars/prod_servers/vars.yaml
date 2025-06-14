@@ -1,4 +1,4 @@
-api_hostname: "api.almonium.app"
+api_hostname: "api.almonium.com"
 db_schema: "prod"
 environment_name: "prod"
 spring_profile: "prod"
