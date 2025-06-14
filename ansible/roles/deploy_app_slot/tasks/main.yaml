@@ -42,7 +42,7 @@
 
 - name: "Wait for {{ deploy_slot }} to become healthy"
   ansible.builtin.uri:
-    url: "http://127.0.0.1:{{ local_healthcheck_port }}/api/v1/actuator/health"
+    url: "http://127.0.0.1:{{ local_healthcheck_port }}{{ context_path }}/actuator/health"
     method: GET
   register: health_check_result
   until: health_check_result.json is defined and health_check_result.json.status == "UP"

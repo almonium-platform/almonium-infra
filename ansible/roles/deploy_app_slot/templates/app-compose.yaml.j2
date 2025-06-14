@@ -9,6 +9,7 @@ services:
       DEPLOY_ENVIRONMENT: "{{ deploy_environment }}"
       APP_INTERNAL_PORT: "{{ app_internal_port }}"
       SERVER_PORT: "{{ app_internal_port }}"
+      CONTEXT_PATH: "{{ context_path }}"
       API_HOSTNAME: "{{ api_hostname }}"
       LOCAL_PORT: "{{ local_port }}"
       DEBUG_PORT: "{{ debug_port }}"
@@ -47,6 +48,9 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy-net"
+      - "traefik.http.middlewares.strip-api-prefix-{{ deploy_environment }}-{{ deploy_slot }}.stripprefix.prefixes={{ context_path }}"
+      - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.rule=Host(`{{ api_hostname }}`) && PathPrefix(`{{ context_path }}`)"
+      - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.middlewares=strip-api-prefix-{{ deploy_environment }}-{{ deploy_slot }}"
       - "traefik.http.services.app-svc-{{ deploy_environment }}-{{ deploy_slot }}.loadbalancer.server.port={{ app_internal_port }}"
       - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.rule=Host(`{{ api_hostname }}`)"
       - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.entrypoints=websecure"
@@ -60,7 +64,7 @@ services:
       - proxy-net
       - broker-net
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:{{ app_internal_port }}/api/v1/actuator/health" ]
+      test: [ "CMD", "curl", "-f", "http://localhost:{{ app_internal_port }}{{ context_path }}/actuator/health" ]
       interval: 10s
       timeout: 3s
       retries: 3
