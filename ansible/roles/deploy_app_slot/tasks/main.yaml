@@ -38,6 +38,8 @@
     pull: "never"
     services:
       - app
+    force_recreate: true
+    recreate_strategy: always
   register: compose_up_result
 
 - name: "Wait for {{ deploy_slot }} to become healthy"
