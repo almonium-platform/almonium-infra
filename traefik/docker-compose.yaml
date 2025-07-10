@@ -20,8 +20,6 @@ services:
       - "80:80"
       - "443:443"
       - "127.0.0.1:8080:8080" # Traefik dashboard
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     environment:
       - PORKBUN_API_KEY=${SHELL_PORKBUN_API_KEY}
       - PORKBUN_SECRET_API_KEY=${SHELL_PORKBUN_SECRET_KEY}
