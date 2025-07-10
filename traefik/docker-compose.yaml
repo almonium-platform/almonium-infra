@@ -23,7 +23,6 @@ services:
     environment:
       - PORKBUN_API_KEY=${SHELL_PORKBUN_API_KEY}
       - PORKBUN_SECRET_API_KEY=${SHELL_PORKBUN_SECRET_KEY}
-    network_mode: "host"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "./acme.json:/letsencrypt/acme.json"
