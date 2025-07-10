@@ -27,6 +27,12 @@ services:
     networks:
       - proxy-net
     restart: unless-stopped
+    labels:
+      - "traefik.http.routers.emby-router.rule=Host(`emby.almonium.com`)"
+      - "traefik.http.routers.emby-router.entrypoints=websecure"
+      - "traefik.http.routers.emby-router.tls.certresolver=porkbun"
+      - "traefik.http.routers.emby-router.service=emby-svc"
+      - "traefik.http.services.emby-svc.loadbalancer.server.url=http://host.docker.internal:8096"
 
   frontend-almonium-com:
     image: nginx:alpine
