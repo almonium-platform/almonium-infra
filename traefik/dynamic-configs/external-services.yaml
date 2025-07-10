@@ -1,0 +1,15 @@
+http:
+  routers:
+    emby-router:
+      rule: "Host(`emby.almonium.com`)"
+      entrypoints:
+        - "websecure"
+      service: "emby-svc"
+      tls:
+        certResolver: "porkbun"
+
+  services:
+    emby-svc:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:8096"

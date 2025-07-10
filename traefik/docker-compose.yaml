@@ -7,6 +7,8 @@ services:
       - "--log.level=INFO"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
+      - "--providers.file.directory=/etc/traefik/dynamic-configs"
+      - "--providers.file.watch=true"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
@@ -24,16 +26,10 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "./acme.json:/letsencrypt/acme.json"
+      - "./dynamic_configs:/etc/traefik/dynamic_configs:ro"
     networks:
       - proxy-net
     restart: unless-stopped
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.emby-router.rule=Host(`emby.almonium.com`)"
-      - "traefik.http.routers.emby-router.entrypoints=websecure"
-      - "traefik.http.routers.emby-router.tls.certresolver=porkbun"
-      - "traefik.http.routers.emby-router.service=emby-svc"
-      - "traefik.http.services.emby-svc.loadbalancer.server.url=http://host.docker.internal:8096"
 
   frontend-almonium-com:
     image: nginx:alpine
