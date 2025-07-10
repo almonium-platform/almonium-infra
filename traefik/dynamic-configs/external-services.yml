@@ -12,4 +12,4 @@ http:
     emby-svc:
       loadBalancer:
         servers:
-          - url: "http://129.159.222.217:8096"
+          - url: "http://locahost:8096"
