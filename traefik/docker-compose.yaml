@@ -28,6 +28,7 @@ services:
       - proxy-net
     restart: unless-stopped
     labels:
+      - "traefik.enable=true"
       - "traefik.http.routers.emby-router.rule=Host(`emby.almonium.com`)"
       - "traefik.http.routers.emby-router.entrypoints=websecure"
       - "traefik.http.routers.emby-router.tls.certresolver=porkbun"
