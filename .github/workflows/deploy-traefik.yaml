@@ -1,4 +1,5 @@
 name: Deploy Traefik Proxy
+
 on:
   workflow_dispatch:
   push:
@@ -10,21 +11,25 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout infra code
-        uses: actions/checkout@v4
-
-      - name: Deploy Traefik to Server
+      - name: Deploy Traefik
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.CLOUD_HOST }}
           username: ${{ secrets.CLOUD_USERNAME }}
           key: ${{ secrets.CLOUD_KEY }}
           script: |
+            echo "--- Navigating to infra repository ---"
+            cd /home/almonium/infra
+            
+            echo "--- Pulling latest changes from master ---"
+            git pull origin master
+            
+            echo "--- Navigating to Traefik directory ---"
+            cd /home/almonium/infra/traefik
+            
+            echo "--- Exporting secrets for Docker Compose ---"
             export SHELL_PORKBUN_API_KEY="${{ secrets.PORKBUN_API_KEY }}"
             export SHELL_PORKBUN_SECRET_KEY="${{ secrets.PORKBUN_SECRET_KEY }}"
-
-            echo "Deploying Traefik..."
-            cd /home/almonium/infra/traefik            
 
             # Create acme.json with correct permissions if it doesn't exist
             if [ ! -f "./acme.json" ]; then
@@ -32,6 +37,10 @@ jobs:
               chmod 600 ./acme.json
             fi
 
-            docker compose pull traefik
+            echo "--- Pulling latest Traefik image ---"
+            docker compose pull
+
+            echo "--- Deploying Traefik stack ---"
             docker compose up -d --remove-orphans
-            echo "Traefik deployment attempted."
+            
+            echo "--- Traefik deployment complete ---"

@@ -1,0 +1,36 @@
+name: Deploy Media Stack
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master ]
+    paths:
+      - 'services/media-stack/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy Media Stack
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.CLOUD_HOST }}
+          username: ${{ secrets.CLOUD_USERNAME }}
+          key: ${{ secrets.CLOUD_KEY }}
+          script: |
+            echo "--- Navigating to infra repository ---"
+            cd /home/almonium/infra
+            
+            echo "--- Pulling latest changes from master ---"
+            git pull origin master
+            
+            echo "--- Navigating to Media Stack directory ---"
+            cd /home/almonium/infra/services/media-stack
+            
+            echo "--- Pulling latest service images (Emby, Syncthing) ---"
+            docker compose pull
+
+            echo "--- Deploying Media Stack ---"
+            docker compose up -d --remove-orphans
+            
+            echo "--- Media Stack deployment complete ---"

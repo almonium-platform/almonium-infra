@@ -1,22 +1,28 @@
-name: Auto Update Infra on Server
+name: Sync Ansible Configs to Server
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
+    paths:
+      - 'ansible/**'
 
 jobs:
-  deploy:
+  sync-ansible:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
-      - name: SSH deploy (git pull infra)
+      - name: SSH and pull Ansible changes
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.CLOUD_HOST }}
           username: ${{ secrets.CLOUD_USERNAME }}
           key: ${{ secrets.CLOUD_KEY }}
           script: |
+            echo "--- Navigating to infra repository ---"
             cd /home/almonium/infra
+            
+            echo "--- Pulling latest changes from master to update Ansible configs ---"
             git pull origin master
+            
+            echo "--- Ansible sync complete ---"
