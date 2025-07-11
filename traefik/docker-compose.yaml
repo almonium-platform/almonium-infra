@@ -28,33 +28,6 @@ services:
       - proxy-net
     restart: unless-stopped
 
-  emby:
-    image: lscr.io/linuxserver/emby:latest
-    container_name: emby_server
-    networks:
-      - proxy-net
-    environment:
-      - PUID=1002
-      - PGID=1002
-      - TZ=Etc/UTC # Optional: set your timezone
-    volumes:
-      # --- THIS IS THE KEY MIGRATION STEP ---
-      # Mount your existing emby data directory to the container's config path
-      - /var/lib/emby:/config
-
-      # --- IMPORTANT: EDIT THESE PATHS LATER ---
-      # You still need to find where your actual media files (movies/shows) are
-      # and mount them here. For now, you can add them later.
-      # - /path/to/your/movies:/data/movies
-      # - /path/to/your/tvshows:/data/tvshows
-    restart: unless-stopped
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.emby-router.rule=Host(`emby.almonium.com`)"
-      - "traefik.http.routers.emby-router.entrypoints=websecure"
-      - "traefik.http.routers.emby-router.tls.certresolver=porkbun"
-      - "traefik.http.services.emby-svc.loadbalancer.server.port=8096"
-
   frontend-almonium-com:
     image: nginx:alpine
     container_name: frontend_almonium_com
