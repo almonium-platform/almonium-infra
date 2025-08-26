@@ -3,7 +3,7 @@ name: Deploy Traefik Proxy
 on:
   workflow_dispatch:
   push:
-    branches: [ master ]
+    branches: [ main ]
     paths:
       - 'traefik/**'
 
@@ -21,8 +21,8 @@ jobs:
             echo "--- Navigating to infra repository ---"
             cd /home/almonium/infra
             
-            echo "--- Pulling latest changes from master ---"
-            git pull origin master
+            echo "--- Pulling latest changes from main ---"
+            git pull origin main
             
             echo "--- Navigating to Traefik directory ---"
             cd /home/almonium/infra/traefik

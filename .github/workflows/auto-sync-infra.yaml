@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - master
+      - main
     paths:
       - 'ansible/**'
 
@@ -22,7 +22,7 @@ jobs:
             echo "--- Navigating to infra repository ---"
             cd /home/almonium/infra
             
-            echo "--- Pulling latest changes from master to update Ansible configs ---"
-            git pull origin master
+            echo "--- Pulling latest changes from main to update Ansible configs ---"
+            git pull origin main
             
             echo "--- Ansible sync complete ---"
