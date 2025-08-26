@@ -1,0 +1,36 @@
+name: Deploy Almonium FE Services
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master ]
+    paths:
+      - 'services/almonium-fe/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy Almonium FE
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.CLOUD_HOST }}
+          username: ${{ secrets.CLOUD_USERNAME }}
+          key: ${{ secrets.CLOUD_KEY }}
+          script: |
+            echo "--- Navigating to infra repository ---"
+            cd /home/almonium/infra
+            
+            echo "--- Pulling latest changes from master ---"
+            git pull origin master
+            
+            echo "--- Navigating to Almonium FE directory ---"
+            cd /home/almonium/infra/almonium-fe     
+
+            echo "--- Pulling latest Almonium FE image ---"
+            docker compose pull
+
+            echo "--- Deploying Almonium FE stack ---"
+            docker compose up -d --remove-orphans
+            
+            echo "--- Almonium FE deployment complete ---"

@@ -1,0 +1,19 @@
+services:
+  static-voices-almonium-com:
+    image: nginx:alpine
+    container_name: static_voices_almonium_com
+    volumes:
+      - /home/almonium/voices:/usr/share/nginx/html:ro
+    networks:
+      - proxy-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.voices-com-router.rule=Host(`voices.almonium.com`)"
+      - "traefik.http.routers.voices-com-router.entrypoints=websecure"
+      - "traefik.http.routers.voices-com-router.tls.certresolver=porkbun"
+      - "traefik.http.services.voices-com-svc.loadbalancer.server.port=80"
+    restart: unless-stopped
+
+networks:
+  proxy-net:
+    external: true

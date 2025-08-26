@@ -1,0 +1,36 @@
+name: Deploy Adoptik Services
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master ]
+    paths:
+      - 'services/adoptik/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy Adoptik
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.CLOUD_HOST }}
+          username: ${{ secrets.CLOUD_USERNAME }}
+          key: ${{ secrets.CLOUD_KEY }}
+          script: |
+            echo "--- Navigating to infra repository ---"
+            cd /home/almonium/infra
+            
+            echo "--- Pulling latest changes from master ---"
+            git pull origin master
+            
+            echo "--- Navigating to Adoptik directory ---"
+            cd /home/almonium/infra/almonium-fe     
+
+            echo "--- Pulling latest Adoptik image ---"
+            docker compose pull
+
+            echo "--- Deploying Adoptik stack ---"
+            docker compose up -d --remove-orphans
+            
+            echo "--- Adoptik deployment complete ---"
