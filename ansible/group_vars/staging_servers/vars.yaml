@@ -1,9 +1,12 @@
 api_hostname: "staging.api.almonium.com"
+db_name: "almonium_staging"
+db_username: "almonium_staging"
 db_schema: "staging"
 environment_name: "staging"
 spring_profile: "staging"
 
 # Secrets Structure
+db_password: ""
 jwt_secret: ""
 stream_key: ""
 stream_secret: ""

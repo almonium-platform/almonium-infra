@@ -2,8 +2,10 @@ local_port: "9998"
 debug_port: "5005"
 context_path: "/api/v1"
 
-db_name: "postgres"
-db_port: "5432"
+# DB (internal)
+db_host: "pgbouncer"       # internal hostname on db-net
+db_port: "6432"
+db_schema: "public"
 
 apple_id: "com.almonium"
 facebook_id: "1311434966049556"
@@ -17,9 +19,7 @@ rabbitmq_host: "rabbitmq"
 rabbitmq_port: "5672"
 
 # Secrets Structure
-db_host: ""
-db_username: ""
-db_password: ""
+db_admin_password: ""
 
 apple_secret: ""
 facebook_secret: ""

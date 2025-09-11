@@ -1,9 +1,12 @@
 api_hostname: "api.almonium.com"
+db_name: "almonium"
+db_username: "almonium_prod"
 db_schema: "prod"
 environment_name: "prod"
 spring_profile: "prod"
 
 # Secrets Structure
+db_password: ""
 jwt_secret: ""
 stream_key: ""
 stream_secret: ""

@@ -1,0 +1,73 @@
+- name: Ensure db-net exists (internal)
+  community.docker.docker_network:
+    name: db-net
+    internal: true
+    state: present
+
+- name: Create DB stack dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - /opt/db
+    - /opt/db/init
+
+- name: Template DB .env
+  template:
+    src: env.j2
+    dest: /opt/db/.env
+    mode: "0600"
+
+- name: Push compose file
+  copy:
+    src: "{{ playbook_dir }}/../services/postgres/docker-compose.yaml"
+    dest: /opt/db/docker-compose.yaml
+    mode: "0644"
+
+# Optional: first-time bootstrap (only runs on a fresh data dir)
+- name: Template first-run SQL (creates DBs, users, grants)
+  template:
+    src: 001-bootstrap.sql.j2
+    dest: /opt/db/init/001-bootstrap.sql
+    mode: "0644"
+
+- name: Up DB stack
+  community.docker.docker_compose_v2:
+    project_src: /opt/db
+    state: present
+
+- name: Wait for Postgres to be ready
+  shell: "docker exec {{ 'postgres_' + deploy_environment }} pg_isready -U {{ db_admin_user | default('postgres') }}"
+  register: pg_ready
+  retries: 30
+  delay: 2
+  until: pg_ready.rc == 0
+
+# If the volume already existed, ensure DBs/users still exist (idempotent)
+- name: Ensure {{ db_name }} database exists
+  shell: |
+    docker exec {{ 'postgres_' + deploy_environment }} \
+      psql -U {{ db_admin_user | default('postgres') }} -tAc \
+      "SELECT 1 FROM pg_database WHERE datname='{{ db_name }}'" | grep -q 1 \
+      || createdb -U {{ db_admin_user | default('postgres') }} {{ db_name }}
+  changed_when: false
+
+- name: Ensure app role exists
+  shell: |
+    docker exec {{ 'postgres_' + deploy_environment }} \
+      psql -U {{ db_admin_user | default('postgres') }} -tAc \
+      "SELECT 1 FROM pg_roles WHERE rolname='{{ db_username }}'" | grep -q 1 \
+      || psql -U {{ db_admin_user | default('postgres') }} -c \
+         "CREATE USER {{ db_username }} WITH PASSWORD '{{ db_password }}';"
+  changed_when: false
+
+- name: Grant privileges
+  shell: |
+    docker exec {{ 'postgres_' + deploy_environment }} \
+      psql -U {{ db_admin_user | default('postgres') }} -d {{ db_name }} -c \
+      "GRANT ALL PRIVILEGES ON DATABASE {{ db_name }} TO {{ db_username }};
+       GRANT USAGE, CREATE ON SCHEMA public TO {{ db_username }};
+       ALTER DEFAULT PRIVILEGES IN SCHEMA public
+         GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {{ db_username }};"
+  changed_when: false

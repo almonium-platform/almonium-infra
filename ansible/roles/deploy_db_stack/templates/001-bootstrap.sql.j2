@@ -1,0 +1,17 @@
+CREATE DATABASE almonium;
+CREATE DATABASE almonium_staging;
+
+CREATE USER almonium_prod    WITH PASSWORD '{{ db_prod_password | default("CHANGE_ME") }}';
+CREATE USER almonium_staging WITH PASSWORD '{{ db_staging_password | default("CHANGE_ME") }}';
+
+\connect almonium
+GRANT USAGE, CREATE ON SCHEMA public TO almonium_prod;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO almonium_prod;
+GRANT ALL PRIVILEGES ON DATABASE almonium TO almonium_prod;
+
+\connect almonium_staging
+GRANT USAGE, CREATE ON SCHEMA public TO almonium_staging;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO almonium_staging;
+GRANT ALL PRIVILEGES ON DATABASE almonium_staging TO almonium_staging;
