@@ -9,7 +9,7 @@ volumes:
 services:
   postgres:
     image: postgres:16
-    container_name: postgres_${DEPLOY_ENVIRONMENT:-prod}
+    container_name: postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -40,7 +40,7 @@ services:
 
   pgbouncer:
     image: edoburu/pgbouncer:v1.24.1-p1
-    container_name: pgbouncer_${DEPLOY_ENVIRONMENT:-prod}
+    container_name: pgbouncer
     environment:
       DB_USER: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
@@ -54,6 +54,8 @@ services:
       - postgres
     expose:
       - "6432"
+    ports:
+      - "127.0.0.1:6432:6432"
     networks:
       - db-net
     restart: unless-stopped
