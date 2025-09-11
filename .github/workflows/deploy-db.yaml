@@ -9,7 +9,7 @@ on:
       - 'services/postgres/**'
 
 jobs:
-  deploy-staging-db:
+  deploy-db:
     runs-on: ubuntu-latest
     steps:
       - name: SSH, pull + run ansible
