@@ -7,7 +7,7 @@
 # If Postgres container already exists/runs, we do a dump; if first run, this will skip
 - name: Check if postgres container exists
   community.docker.docker_container_info:
-    name: "postgres_{{ deploy_environment }}"
+    name: "postgres"
   register: pg_info
   failed_when: false
   changed_when: false
