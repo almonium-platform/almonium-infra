@@ -1,3 +1,4 @@
+deploy_environment: "prod"
 api_hostname: "api.almonium.com"
 db_name: "almonium"
 db_username: "almonium_prod"
