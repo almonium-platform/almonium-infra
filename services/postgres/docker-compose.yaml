@@ -50,6 +50,9 @@ services:
       MAX_CLIENT_CONN: 500
       DEFAULT_POOL_SIZE: 50
       LISTEN_PORT: 6432
+      AUTH_TYPE: scram-sha-256
+      AUTH_USER: ${POSTGRES_USER}
+      AUTH_QUERY: "SELECT usename, passwd FROM pg_shadow WHERE usename = $1"
     depends_on:
       - postgres
     expose:
