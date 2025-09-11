@@ -59,6 +59,7 @@ services:
     networks:
       - proxy-net
       - broker-net
+      - db-net
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:{{ app_internal_port }}{{ context_path }}/actuator/health" ]
       interval: 10s
