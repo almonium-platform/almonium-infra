@@ -39,7 +39,7 @@ services:
     restart: unless-stopped
 
   pgbouncer:
-    image: edoburu/pgbouncer:1.23.1
+    image: edoburu/pgbouncer:v1.24.1-p1
     container_name: pgbouncer_${DEPLOY_ENVIRONMENT:-prod}
     environment:
       DB_USER: ${POSTGRES_USER}
