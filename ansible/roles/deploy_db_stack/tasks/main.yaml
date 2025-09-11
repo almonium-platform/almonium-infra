@@ -10,6 +10,7 @@
     name: "postgres_{{ deploy_environment }}"
   register: pg_info
   failed_when: false
+  changed_when: false
 
 - name: Create timestamp fact for backups
   set_fact:
@@ -24,12 +25,15 @@
         if psql -U {{ db_admin_user | default("postgres") }} -tAc "SELECT 1 FROM pg_database WHERE datname='\''$DB'\''" | grep -q 1; then
           echo "Dumping $DB..."
           pg_dump -U {{ db_admin_user | default("postgres") }} -Fc -d "$DB" > /backups/${DB}_{{ backup_ts }}.dump
-          # keep last 7 dumps per DB
           ls -1t /backups/${DB}_*.dump 2>/dev/null | tail -n +8 | xargs -r rm -f
         fi
       done
     '
-  when: pg_info is defined and pg_info.containers | length > 0 and pg_info.containers[0].State.Running | default(false)
+  when:
+    - pg_info is defined
+    - pg_info.exists | default(false)
+    - (pg_info.container.State.Running | default(false)) or
+      (pg_info.container.State.Status | default('') == 'running')
   args:
     executable: /bin/bash
 
