@@ -19,7 +19,7 @@
 - name: Backup databases (skip if container absent)
   shell: |
     set -e
-    docker exec {{ 'postgres_' + deploy_environment }} bash -lc '
+    docker exec postgres bash -lc '
       set -e
       for DB in almonium almonium_staging; do
         if psql -U {{ db_admin_user | default("postgres") }} -tAc "SELECT 1 FROM pg_database WHERE datname='\''$DB'\''" | grep -q 1; then
@@ -77,7 +77,7 @@
     state: present
 
 - name: Wait for Postgres to be ready
-  shell: "docker exec {{ 'postgres_' + deploy_environment }} pg_isready -U {{ db_admin_user | default('postgres') }}"
+  shell: "docker exec postgres pg_isready -U {{ db_admin_user | default('postgres') }}"
   register: pg_ready
   retries: 30
   delay: 2
@@ -86,7 +86,7 @@
 # If the volume already existed, ensure DBs/users still exist (idempotent)
 - name: Ensure {{ db_name }} database exists
   shell: |
-    docker exec {{ 'postgres_' + deploy_environment }} \
+    docker exec postgres \
       psql -U {{ db_admin_user | default('postgres') }} -tAc \
       "SELECT 1 FROM pg_database WHERE datname='{{ db_name }}'" | grep -q 1 \
       || createdb -U {{ db_admin_user | default('postgres') }} {{ db_name }}
@@ -94,7 +94,7 @@
 
 - name: Ensure app role exists
   shell: |
-    docker exec {{ 'postgres_' + deploy_environment }} \
+    docker exec postgres \
       psql -U {{ db_admin_user | default('postgres') }} -tAc \
       "SELECT 1 FROM pg_roles WHERE rolname='{{ db_username }}'" | grep -q 1 \
       || psql -U {{ db_admin_user | default('postgres') }} -c \
@@ -103,7 +103,7 @@
 
 - name: Grant privileges
   shell: |
-    docker exec {{ 'postgres_' + deploy_environment }} \
+    docker exec postgres \
       psql -U {{ db_admin_user | default('postgres') }} -d {{ db_name }} -c \
       "GRANT ALL PRIVILEGES ON DATABASE {{ db_name }} TO {{ db_username }};
        GRANT USAGE, CREATE ON SCHEMA public TO {{ db_username }};
