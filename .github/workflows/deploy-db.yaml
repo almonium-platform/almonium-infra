@@ -1,0 +1,53 @@
+name: Deploy DB via Ansible (on server)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'ansible/**'
+      - 'services/postgres/**'
+
+jobs:
+  deploy-staging-db:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH, pull + run ansible
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.CLOUD_HOST }}
+          username: ${{ secrets.CLOUD_USERNAME }}
+          key: ${{ secrets.CLOUD_KEY }}
+          script: |
+            set -euo pipefail
+
+            echo '--- Pull latest infra ---'
+            cd /home/almonium/infra
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo '--- Ensure prereqs (idempotent) ---'
+            if ! command -v ansible >/dev/null; then
+              sudo apt-get update
+              sudo apt-get install -y ansible
+            fi
+            if ! command -v docker >/dev/null; then
+              curl -fsSL https://get.docker.com | sh
+              sudo usermod -aG docker "$USER"
+            fi
+            if ! docker compose version >/dev/null 2>&1; then
+              sudo apt-get install -y docker-compose-plugin
+            fi
+            ansible-galaxy collection install community.docker
+
+            echo '--- Write vault password (temp) ---'
+            mkdir -p ~/.ansible
+            umask 077
+            printf "%s" "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ~/.ansible/vault-pass.txt
+
+            echo '--- Deploy DB (staging) ---'
+            ansible-playbook \
+              -i ansible/inventory/staging.ini \
+              ansible/playbook-deploy-db.yaml \
+              -l staging_servers \
+              --vault-password-file ~/.ansible/vault-pass.txt

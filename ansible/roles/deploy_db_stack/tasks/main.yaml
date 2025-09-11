@@ -1,3 +1,38 @@
+- name: Ensure host backup dir exists
+  file:
+    path: /opt/db/backups
+    state: directory
+    mode: "0755"
+
+# If Postgres container already exists/runs, we do a dump; if first run, this will skip
+- name: Check if postgres container exists
+  community.docker.docker_container_info:
+    name: "postgres_{{ deploy_environment }}"
+  register: pg_info
+  failed_when: false
+
+- name: Create timestamp fact for backups
+  set_fact:
+    backup_ts: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
+
+- name: Backup databases (skip if container absent)
+  shell: |
+    set -e
+    docker exec {{ 'postgres_' + deploy_environment }} bash -lc '
+      set -e
+      for DB in almonium almonium_staging; do
+        if psql -U {{ db_admin_user | default("postgres") }} -tAc "SELECT 1 FROM pg_database WHERE datname='\''$DB'\''" | grep -q 1; then
+          echo "Dumping $DB..."
+          pg_dump -U {{ db_admin_user | default("postgres") }} -Fc -d "$DB" > /backups/${DB}_{{ backup_ts }}.dump
+          # keep last 7 dumps per DB
+          ls -1t /backups/${DB}_*.dump 2>/dev/null | tail -n +8 | xargs -r rm -f
+        fi
+      done
+    '
+  when: pg_info is defined and pg_info.containers | length > 0 and pg_info.containers[0].State.Running | default(false)
+  args:
+    executable: /bin/bash
+
 - name: Ensure db-net exists (internal)
   community.docker.docker_network:
     name: db-net
