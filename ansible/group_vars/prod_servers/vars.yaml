@@ -2,7 +2,7 @@ deploy_environment: "prod"
 api_hostname: "api.almonium.com"
 db_name: "almonium"
 db_username: "almonium_prod"
-db_schema: "prod"
+db_schema: "public"
 environment_name: "prod"
 spring_profile: "prod"
 

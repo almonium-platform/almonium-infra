@@ -2,7 +2,7 @@ deploy_environment: "staging"
 api_hostname: "staging.api.almonium.com"
 db_name: "almonium_staging"
 db_username: "almonium_staging"
-db_schema: "staging"
+db_schema: "public"
 environment_name: "staging"
 spring_profile: "staging"
 
