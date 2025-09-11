@@ -50,4 +50,6 @@ jobs:
               -i ansible/inventory/staging.ini \
               ansible/playbook-deploy-db.yaml \
               -l staging_servers \
+              -c local \
+              -e ansible_python_interpreter=/usr/bin/python3 \
               --vault-password-file ~/.ansible/vault-pass.txt
