@@ -37,10 +37,10 @@
   args:
     executable: /bin/bash
 
-- name: Ensure db-net exists (internal)
+- name: Ensure db-net exists
   community.docker.docker_network:
     name: db-net
-    internal: true
+    internal: false
     state: present
 
 - name: Create DB stack dirs
