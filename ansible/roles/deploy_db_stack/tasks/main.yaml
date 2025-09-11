@@ -110,3 +110,14 @@
        ALTER DEFAULT PRIVILEGES IN SCHEMA public
          GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {{ db_username }};"
   changed_when: false
+
+- name: Enforce DB connect privileges per env
+  shell: |
+    docker exec postgres psql -U {{ db_admin_user | default('postgres') }} -v ON_ERROR_STOP=1 -c "
+      REVOKE CONNECT, TEMP ON DATABASE almonium          FROM PUBLIC, almonium_staging;
+      REVOKE CONNECT, TEMP ON DATABASE almonium_staging  FROM PUBLIC, almonium_prod;
+      GRANT  CONNECT ON DATABASE almonium          TO almonium_prod;
+      GRANT  CONNECT ON DATABASE almonium_staging  TO almonium_staging;
+    "
+  changed_when: false
+  run_once: true
