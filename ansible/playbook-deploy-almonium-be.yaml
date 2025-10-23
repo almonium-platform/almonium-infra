@@ -7,27 +7,6 @@
     project_name_base: "almonium-be"
     app_internal_port: "9998"
 
-  pre_tasks:
-    - name: Canary decrypt — verify vault password for 'all'
-      ansible.builtin.command: >
-        ansible-vault view "{{ playbook_dir }}/vault_canaries/canary-all.txt" --vault-id "all@env:ANSIBLE_VAULT_PASSWORD_ALL"
-      delegate_to: localhost
-      run_once: true
-      changed_when: false
-      no_log: true
-      environment:
-        ANSIBLE_VAULT_PASSWORD_ALL: "{{ lookup('env', 'ANSIBLE_VAULT_PASSWORD_ALL') }}"
-
-    - name: Canary decrypt — verify vault password for this environment
-      ansible.builtin.command: >
-        ansible-vault view "{{ playbook_dir }}/vault_canaries/canary-{{ deploy_environment }}.txt" --vault-id "{{ deploy_environment }}@env:ANSIBLE_VAULT_PASSWORD_ENV"
-      delegate_to: localhost
-      run_once: true
-      changed_when: false
-      no_log: true
-      environment:
-        ANSIBLE_VAULT_PASSWORD_ENV: "{{ lookup('env', 'ANSIBLE_VAULT_PASSWORD_ENV') }}"
-
   tasks:
     - name: Determine project name suffix and color file path
       ansible.builtin.set_fact:
