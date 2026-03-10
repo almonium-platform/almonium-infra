@@ -43,13 +43,13 @@ jobs:
             echo '--- Write vault password (temp) ---'
             mkdir -p ~/.ansible
             umask 077
-            printf "%s" "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ~/.ansible/vault-pass.txt
+            printf "%s" "${{ secrets.ANSIBLE_VAULT_PASSWORD_ALL }}" > ~/.ansible/vault-pass-all.txt
 
-            echo '--- Deploy DB (staging) ---'
+            echo '--- Deploy DB on OCI ---'
             ansible-playbook \
-              -i ansible/inventory/staging.ini \
-              ansible/playbook-deploy-db.yaml \
-              -l staging_servers \
-              -c local \
-              -e ansible_python_interpreter=/usr/bin/python3 \
-              --vault-password-file ~/.ansible/vault-pass.txt
+            -i ansible/inventory/oci.ini \
+            ansible/playbook-deploy-db.yaml \
+            -l oci \
+            -c local \
+            -e ansible_python_interpreter=/usr/bin/python3 \
+            --vault-id all@~/.ansible/vault-pass-all.txt
