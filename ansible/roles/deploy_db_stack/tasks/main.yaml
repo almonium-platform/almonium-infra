@@ -4,7 +4,28 @@
     state: directory
     mode: "0755"
 
-# If Postgres container already exists/runs, we do a dump; if first run, this will skip
+- name: Validate PostgreSQL tenant declarations exist
+  assert:
+    that:
+      - postgres_app_tenants is defined
+      - postgres_app_tenants | length > 0
+      - postgres_tenant_passwords is defined
+    fail_msg: "postgres_app_tenants and postgres_tenant_passwords must be defined."
+
+- name: Validate PostgreSQL tenant declaration fields
+  assert:
+    that:
+      - item.app_id is defined
+      - item.environment is defined
+      - item.db_name is defined
+      - item.db_user is defined
+      - (postgres_tenant_passwords[item.app_id ~ ':' ~ item.environment]) is defined
+      - (postgres_tenant_passwords[item.app_id ~ ':' ~ item.environment] | string | length) > 0
+    fail_msg: "Invalid postgres tenant declaration: {{ item | to_nice_json }}"
+  loop: "{{ postgres_app_tenants }}"
+  loop_control:
+    label: "{{ item.app_id }}:{{ item.environment }}"
+
 - name: Check if postgres container exists
   community.docker.docker_container_info:
     name: "postgres"
@@ -16,26 +37,30 @@
   set_fact:
     backup_ts: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
 
-- name: Backup databases (skip if container absent)
+- name: Backup tenant databases
   shell: |
     set -e
     docker exec postgres bash -lc '
       set -e
-      for DB in almonium almonium_staging; do
-        if psql -U {{ db_admin_user | default("postgres") }} -tAc "SELECT 1 FROM pg_database WHERE datname='\''$DB'\''" | grep -q 1; then
-          echo "Dumping $DB..."
-          pg_dump -U {{ db_admin_user | default("postgres") }} -Fc -d "$DB" > /backups/${DB}_{{ backup_ts }}.dump
-          ls -1t /backups/${DB}_*.dump 2>/dev/null | tail -n +8 | xargs -r rm -f
-        fi
-      done
+      DB="{{ item.db_name }}"
+      if psql -U {{ db_admin_user | default("postgres") }} -tAc "SELECT 1 FROM pg_database WHERE datname='\''${DB}'\''" | grep -q 1; then
+        echo "Dumping ${DB}..."
+        pg_dump -U {{ db_admin_user | default("postgres") }} -Fc -d "${DB}" > /backups/${DB}_{{ backup_ts }}.dump
+        ls -1t /backups/${DB}_*.dump 2>/dev/null | tail -n +8 | xargs -r rm -f
+      fi
     '
   when:
     - pg_info is defined
     - pg_info.exists | default(false)
     - (pg_info.container.State.Running | default(false)) or
       (pg_info.container.State.Status | default('') == 'running')
+    - item.backup | default(false)
   args:
     executable: /bin/bash
+  changed_when: false
+  loop: "{{ postgres_app_tenants }}"
+  loop_control:
+    label: "{{ item.db_name }}"
 
 - name: Ensure db-net exists
   community.docker.docker_network:
@@ -64,13 +89,6 @@
     dest: /opt/db/docker-compose.yaml
     mode: "0644"
 
-# Optional: first-time bootstrap (only runs on a fresh data dir)
-- name: Template first-run SQL (creates DBs, users, grants)
-  template:
-    src: 001-bootstrap.sql.j2
-    dest: /opt/db/init/001-bootstrap.sql
-    mode: "0644"
-
 - name: Up DB stack
   community.docker.docker_compose_v2:
     project_src: /opt/db
@@ -82,42 +100,69 @@
   retries: 30
   delay: 2
   until: pg_ready.rc == 0
-
-# If the volume already existed, ensure DBs/users still exist (idempotent)
-- name: Ensure {{ db_name }} database exists
-  shell: |
-    docker exec postgres \
-      psql -U {{ db_admin_user | default('postgres') }} -tAc \
-      "SELECT 1 FROM pg_database WHERE datname='{{ db_name }}'" | grep -q 1 \
-      || createdb -U {{ db_admin_user | default('postgres') }} {{ db_name }}
   changed_when: false
 
-- name: Ensure app role exists
-  shell: |
-    docker exec postgres \
-      psql -U {{ db_admin_user | default('postgres') }} -tAc \
-      "SELECT 1 FROM pg_roles WHERE rolname='{{ db_username }}'" | grep -q 1 \
-      || psql -U {{ db_admin_user | default('postgres') }} -c \
-         "CREATE USER {{ db_username }} WITH PASSWORD '{{ db_password }}';"
-  changed_when: false
-
-- name: Grant privileges
-  shell: |
-    docker exec postgres \
-      psql -U {{ db_admin_user | default('postgres') }} -d {{ db_name }} -c \
-      "GRANT ALL PRIVILEGES ON DATABASE {{ db_name }} TO {{ db_username }};
-       GRANT USAGE, CREATE ON SCHEMA public TO {{ db_username }};
-       ALTER DEFAULT PRIVILEGES IN SCHEMA public
-         GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {{ db_username }};"
-  changed_when: false
-
-- name: Enforce DB connect privileges per env
+- name: Ensure tenant roles exist and passwords are current
   shell: |
     docker exec postgres psql -U {{ db_admin_user | default('postgres') }} -v ON_ERROR_STOP=1 -c "
-      REVOKE CONNECT, TEMP ON DATABASE almonium          FROM PUBLIC, almonium_staging;
-      REVOKE CONNECT, TEMP ON DATABASE almonium_staging  FROM PUBLIC, almonium_prod;
-      GRANT  CONNECT ON DATABASE almonium          TO almonium_prod;
-      GRANT  CONNECT ON DATABASE almonium_staging  TO almonium_staging;
+    DO \$\$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_roles WHERE rolname='{{ item.db_user }}'
+      ) THEN
+        EXECUTE format(
+          'CREATE ROLE %I LOGIN PASSWORD %L',
+          '{{ item.db_user }}',
+          '{{ postgres_tenant_passwords[item.app_id ~ ":" ~ item.environment] | replace("'", "''") }}'
+        );
+      ELSE
+        EXECUTE format(
+          'ALTER ROLE %I PASSWORD %L',
+          '{{ item.db_user }}',
+          '{{ postgres_tenant_passwords[item.app_id ~ ":" ~ item.environment] | replace("'", "''") }}'
+        );
+      END IF;
+    END
+    \$\$;"
+  changed_when: false
+  loop: "{{ postgres_app_tenants }}"
+  loop_control:
+    label: "{{ item.app_id }}:{{ item.environment }}"
+
+- name: Ensure tenant databases exist with correct owner
+  shell: |
+    docker exec postgres psql -U {{ db_admin_user | default('postgres') }} -v ON_ERROR_STOP=1 -tAc "
+    SELECT 1 FROM pg_database WHERE datname='{{ item.db_name }}'
+    " | grep -q 1 || docker exec postgres createdb -U {{ db_admin_user | default('postgres') }} -O {{ item.db_user }} {{ item.db_name }}
+  changed_when: false
+  loop: "{{ postgres_app_tenants }}"
+  loop_control:
+    label: "{{ item.db_name }}"
+
+- name: Ensure tenant DB ownership and schema privileges
+  shell: |
+    docker exec postgres psql -U {{ db_admin_user | default('postgres') }} -d {{ item.db_name }} -v ON_ERROR_STOP=1 -c "
+      ALTER DATABASE {{ item.db_name }} OWNER TO {{ item.db_user }};
+      GRANT USAGE, CREATE ON SCHEMA {{ item.db_schema | default('public') }} TO {{ item.db_user }};
+      GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {{ item.db_schema | default('public') }} TO {{ item.db_user }};
+      GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA {{ item.db_schema | default('public') }} TO {{ item.db_user }};
+      ALTER DEFAULT PRIVILEGES FOR USER {{ item.db_user }} IN SCHEMA {{ item.db_schema | default('public') }}
+        GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {{ item.db_user }};
+      ALTER DEFAULT PRIVILEGES FOR USER {{ item.db_user }} IN SCHEMA {{ item.db_schema | default('public') }}
+        GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO {{ item.db_user }};
     "
   changed_when: false
-  run_once: true
+  loop: "{{ postgres_app_tenants }}"
+  loop_control:
+    label: "{{ item.app_id }}:{{ item.environment }}"
+
+- name: Enforce tenant DB connect isolation
+  shell: |
+    docker exec postgres psql -U {{ db_admin_user | default('postgres') }} -v ON_ERROR_STOP=1 -c "
+      REVOKE CONNECT, TEMP ON DATABASE {{ item.db_name }} FROM PUBLIC;
+      GRANT CONNECT ON DATABASE {{ item.db_name }} TO {{ item.db_user }};
+    "
+  changed_when: false
+  loop: "{{ postgres_app_tenants }}"
+  loop_control:
+    label: "{{ item.db_name }}"
