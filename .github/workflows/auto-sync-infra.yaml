@@ -5,8 +5,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'ansible/**'
 
 jobs:
   sync-ansible:
@@ -19,10 +17,8 @@ jobs:
           username: ${{ secrets.CLOUD_USERNAME }}
           key: ${{ secrets.CLOUD_KEY }}
           script: |
-            echo "--- Navigating to infra repository ---"
+            set -euo pipefail
+
             cd /home/almonium/infra
-            
-            echo "--- Pulling latest changes from main to update Ansible configs ---"
-            git pull origin main
-            
-            echo "--- Ansible sync complete ---"
+            git fetch origin main
+            git reset --hard origin/main

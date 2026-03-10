@@ -1,6 +1,12 @@
 name: Deploy RabbitMQ Service
+
 on:
   workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'rabbitmq/**'
+      - '.github/workflows/deploy-rabbitmq.yaml'
 
 jobs:
   deploy_rabbitmq:
@@ -13,6 +19,12 @@ jobs:
           username: ${{ secrets.CLOUD_USERNAME }}
           key: ${{ secrets.CLOUD_KEY }}
           script: |
+            set -euo pipefail
+
+            cd /home/almonium/infra
+            git fetch origin main
+            git reset --hard origin/main
+
             cd /home/almonium/infra/rabbitmq
             export RABBITMQ_USER="${{ secrets.RABBITMQ_USER }}"
             export RABBITMQ_PASS="${{ secrets.RABBITMQ_PASS }}"

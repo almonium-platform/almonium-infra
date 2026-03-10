@@ -1,12 +1,12 @@
-name: Deploy DB via Ansible (on server)
+name: Deploy Postgres DB
 
 on:
   workflow_dispatch:
   push:
     branches: [ main ]
     paths:
-      - 'ansible/**'
       - 'services/postgres/**'
+      - '.github/workflows/deploy-db.yaml'
 
 jobs:
   deploy-db:
@@ -21,7 +21,6 @@ jobs:
           script: |
             set -euo pipefail
 
-            echo '--- Pull latest infra ---'
             cd /home/almonium/infra
             git fetch origin main
             git reset --hard origin/main
@@ -40,16 +39,16 @@ jobs:
             fi
             ansible-galaxy collection install community.docker
 
-            echo '--- Write vault password (temp) ---'
             mkdir -p ~/.ansible
             umask 077
-            printf "%s" "${{ secrets.ANSIBLE_VAULT_PASSWORD_ALL }}" > ~/.ansible/vault-pass-all.txt
-
-            echo '--- Deploy DB on OCI ---'
+            VAULT_FILE="$(mktemp ~/.ansible/vault-pass-all.XXXXXX)"
+            trap 'rm -f "$VAULT_FILE"' EXIT
+            printf "%s" "${{ secrets.ANSIBLE_VAULT_PASSWORD_ALL }}" > "$VAULT_FILE"
+            
             ansible-playbook \
-            -i ansible/inventory/oci.ini \
-            ansible/playbook-deploy-db.yaml \
-            -l oci \
-            -c local \
-            -e ansible_python_interpreter=/usr/bin/python3 \
-            --vault-id all@~/.ansible/vault-pass-all.txt
+              -i ansible/inventory/oci.ini \
+              ansible/playbook-deploy-db.yaml \
+              -l oci \
+              -c local \
+              -e ansible_python_interpreter=/usr/bin/python3 \
+              --vault-id all@"$VAULT_FILE"

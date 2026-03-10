@@ -6,6 +6,7 @@ on:
     branches: [ main ]
     paths:
       - 'services/media-stack/**'
+      - '.github/workflows/deploy-media-stack.yaml'
 
 jobs:
   deploy:
@@ -18,19 +19,13 @@ jobs:
           username: ${{ secrets.CLOUD_USERNAME }}
           key: ${{ secrets.CLOUD_KEY }}
           script: |
-            echo "--- Navigating to infra repository ---"
-            cd /home/almonium/infra
-            
-            echo "--- Pulling latest changes from main ---"
-            git pull origin main
-            
-            echo "--- Navigating to Media Stack directory ---"
-            cd /home/almonium/infra/services/media-stack
-            
-            echo "--- Pulling latest service images (Emby, Syncthing) ---"
-            docker compose pull
+            set -euo pipefail
 
-            echo "--- Deploying Media Stack ---"
-            docker compose up -d --remove-orphans
+            cd /home/almonium/infra
+            git fetch origin main
+            git reset --hard origin/main
             
-            echo "--- Media Stack deployment complete ---"
+            cd /home/almonium/infra/services/media-stack
+
+            docker compose pull
+            docker compose up -d --remove-orphans

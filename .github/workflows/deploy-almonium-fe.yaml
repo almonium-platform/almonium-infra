@@ -1,4 +1,4 @@
-name: Deploy Almonium FE Services
+name: Deploy Almonium FE
 
 on:
   workflow_dispatch:
@@ -6,6 +6,7 @@ on:
     branches: [ main ]
     paths:
       - 'services/almonium-fe/**'
+      - '.github/workflows/deploy-almonium-fe.yaml'
 
 jobs:
   deploy:
@@ -18,19 +19,13 @@ jobs:
           username: ${{ secrets.CLOUD_USERNAME }}
           key: ${{ secrets.CLOUD_KEY }}
           script: |
-            echo "--- Navigating to infra repository ---"
+            set -euo pipefail
+
             cd /home/almonium/infra
+            git fetch origin main
+            git reset --hard origin/main
             
-            echo "--- Pulling latest changes from main ---"
-            git pull origin main
-            
-            echo "--- Navigating to Almonium FE directory ---"
-            cd /home/almonium/infra/almonium-fe     
+            cd /home/almonium/infra/almonium-fe
 
-            echo "--- Pulling latest Almonium FE image ---"
             docker compose pull
-
-            echo "--- Deploying Almonium FE stack ---"
             docker compose up -d --remove-orphans
-            
-            echo "--- Almonium FE deployment complete ---"

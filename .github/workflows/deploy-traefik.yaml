@@ -6,6 +6,7 @@ on:
     branches: [ main ]
     paths:
       - 'traefik/**'
+      - '.github/workflows/deploy-traefik.yaml'
 
 jobs:
   deploy:
@@ -18,16 +19,14 @@ jobs:
           username: ${{ secrets.CLOUD_USERNAME }}
           key: ${{ secrets.CLOUD_KEY }}
           script: |
-            echo "--- Navigating to infra repository ---"
+            set -euo pipefail
+
             cd /home/almonium/infra
-            
-            echo "--- Pulling latest changes from main ---"
-            git pull origin main
-            
-            echo "--- Navigating to Traefik directory ---"
+            git fetch origin main
+            git reset --hard origin/main
+
             cd /home/almonium/infra/traefik
             
-            echo "--- Exporting secrets for Docker Compose ---"
             export SHELL_PORKBUN_API_KEY="${{ secrets.PORKBUN_API_KEY }}"
             export SHELL_PORKBUN_SECRET_KEY="${{ secrets.PORKBUN_SECRET_KEY }}"
 
@@ -37,10 +36,5 @@ jobs:
               chmod 600 ./acme.json
             fi
 
-            echo "--- Pulling latest Traefik image ---"
             docker compose pull
-
-            echo "--- Deploying Traefik stack ---"
             docker compose up -d --remove-orphans
-            
-            echo "--- Traefik deployment complete ---"
