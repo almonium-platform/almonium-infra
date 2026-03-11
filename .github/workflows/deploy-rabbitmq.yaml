@@ -37,7 +37,7 @@ jobs:
             VAULT_ALMONIUM_PROD="$(mktemp ~/.ansible/vault-pass-almonium-prod.XXXXXX)"
             VAULT_ALMONIUM_STAGING="$(mktemp ~/.ansible/vault-pass-almonium-staging.XXXXXX)"
 
-            trap 'rm -f "$VAULT_ALL" "$VAULT_PROD" "$VAULT_STAGING"' EXIT
+            trap 'rm -f "$VAULT_ALL" "VAULT_ALMONIUM_PROD" "VAULT_ALMONIUM_STAGING"' EXIT
 
             printf "%s" "${{ secrets.ANSIBLE_VAULT_PASSWORD_ALL }}" > "$VAULT_ALL"
             printf "%s" "${{ secrets.ANSIBLE_VAULT_PASSWORD_ALMONIUM_PROD }}" > "$VAULT_ALMONIUM_PROD"
