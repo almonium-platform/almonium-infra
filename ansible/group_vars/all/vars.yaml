@@ -1,4 +1,5 @@
 db_admin_user: "postgres"
+rabbitmq_admin_user: "admin"
 
 postgres_app_tenants:
   - app_id: "almonium"
@@ -22,47 +23,10 @@ postgres_app_tenants:
     db_schema: "public"
     backup: true
 
-local_port: "9998"
-debug_port: "5005"
-context_path: "/api/v1"
-
-# DB (internal)
-db_host: "pgbouncer"       # internal hostname on db-net
-db_port: "6432"
-db_schema: "public"
-
-apple_id: "com.almonium"
-facebook_id: "1311434966049556"
-google_id: "33380019461-l4hq3eto00vvvgprtadahm5o2tqj65ti.apps.googleusercontent.com"
-google_project_id: "linguatool"
-firebase_storage_bucket: "almonium.firebasestorage.app"
-
-mail_username: "noreply@almonium.com"
-
-rabbitmq_host: "rabbitmq"
-rabbitmq_port: "5672"
-
-# Secrets Structure
-db_admin_password: ""
-
-apple_secret: ""
-facebook_secret: ""
-google_secret: ""
-
-google_service_account_key_base64: ""
-
-mail_password: ""
-
-rabbitmq_user: ""
-rabbitmq_pass: ""
-
-openai_key: ""
-gemini_api_key: ""
-rapid_api_key: ""
-wordnik_key: ""
-yandex_key: ""
-
-postgres_tenant_passwords:
-  "almonium:prod": ""
-  "almonium:staging": ""
-  "fam_sub:main": ""
+platform:
+  db:
+    host: "pgbouncer"
+    port: "6432"
+  rabbitmq:
+    host: "rabbitmq"
+    port: "5672"

@@ -1,0 +1,42 @@
+shared:
+  local_port: "9998"
+  debug_port: "5005"
+  context_path: "/api/v1"
+
+  apple_id: "com.almonium"
+  facebook_id: "1311434966049556"
+  google_id: "33380019461-l4hq3eto00vvvgprtadahm5o2tqj65ti.apps.googleusercontent.com"
+  google_project_id: "linguatool"
+  firebase_storage_bucket: "almonium.firebasestorage.app"
+  mail_username: "noreply@almonium.com"
+
+deployments:
+  prod:
+    api_hostname: "api.almonium.com"
+    deploy_environment: "prod"
+    environment_name: "prod"
+    spring_profile: "prod"
+
+    db:
+      name: "almonium"
+      username: "almonium_prod"
+      schema: "public"
+
+    rabbitmq:
+      username: "almonium_prod"
+      vhost: "/almonium_prod"
+
+  staging:
+    api_hostname: "staging.api.almonium.com"
+    deploy_environment: "staging"
+    environment_name: "staging"
+    spring_profile: "staging"
+
+    db:
+      name: "almonium_staging"
+      username: "almonium_staging"
+      schema: "public"
+
+    rabbitmq:
+      username: "almonium_staging"
+      vhost: "/almonium_staging"

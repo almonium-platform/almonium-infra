@@ -3,8 +3,8 @@ services:
     image: rabbitmq:4.1.0-management
     container_name: rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
+      RABBITMQ_DEFAULT_USER: "{{ rabbitmq_admin_user }}"
+      RABBITMQ_DEFAULT_PASS: "{{ rabbitmq_admin_password }}"
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -13,7 +13,7 @@ services:
     networks:
       - broker-net
     healthcheck:
-      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 30s
       timeout: 5s
       retries: 3

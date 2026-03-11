@@ -1,0 +1,106 @@
+- name: Load Almonium app vars
+  include_vars:
+    name: almonium
+    file: "{{ playbook_dir }}/../vars/apps/almonium/vars.yaml"
+
+- name: Load Almonium prod secrets
+  include_vars:
+    name: almonium_prod
+    file: "{{ playbook_dir }}/../vars/apps/almonium/vault.prod.yaml"
+
+- name: Load Almonium staging secrets
+  include_vars:
+    name: almonium_staging
+    file: "{{ playbook_dir }}/../vars/apps/almonium/vault.staging.yaml"
+
+- name: Validate RabbitMQ admin vars
+  assert:
+    that:
+      - rabbitmq_admin_user is defined
+      - rabbitmq_admin_password is defined
+      - rabbitmq_admin_password | string | length > 0
+    fail_msg: "rabbitmq_admin_user and rabbitmq_admin_password must be defined."
+
+- name: Validate Almonium RabbitMQ deployment vars
+  assert:
+    that:
+      - almonium.deployments.prod.rabbitmq.username is defined
+      - almonium.deployments.prod.rabbitmq.vhost is defined
+      - almonium_prod.rabbitmq.password is defined
+      - almonium_prod.rabbitmq.password | string | length > 0
+      - almonium.deployments.staging.rabbitmq.username is defined
+      - almonium.deployments.staging.rabbitmq.vhost is defined
+      - almonium_staging.rabbitmq.password is defined
+      - almonium_staging.rabbitmq.password | string | length > 0
+    fail_msg: "Missing Almonium RabbitMQ deployment vars or secrets."
+
+- name: Ensure broker-net exists
+  community.docker.docker_network:
+    name: broker-net
+    internal: false
+    state: present
+
+- name: Ensure RabbitMQ stack dir exists
+  file:
+    path: /opt/rabbitmq
+    state: directory
+    mode: "0755"
+
+- name: Template RabbitMQ compose file
+  template:
+    src: rabbitmq-compose.yaml.j2
+    dest: /opt/rabbitmq/docker-compose.yaml
+    mode: "0644"
+
+- name: Start RabbitMQ stack
+  community.docker.docker_compose_v2:
+    project_src: /opt/rabbitmq
+    state: present
+
+- name: Wait for RabbitMQ to be ready
+  shell: docker exec rabbitmq rabbitmq-diagnostics -q ping
+  register: rabbit_ready
+  retries: 30
+  delay: 2
+  until: rabbit_ready.rc == 0
+  changed_when: false
+
+- name: Ensure RabbitMQ vhosts exist
+  shell: |
+    docker exec rabbitmq rabbitmqctl list_vhosts -q | grep -Fxq '{{ item.vhost }}' \
+      || docker exec rabbitmq rabbitmqctl add_vhost '{{ item.vhost }}'
+  loop:
+    - vhost: "{{ almonium.deployments.prod.rabbitmq.vhost }}"
+    - vhost: "{{ almonium.deployments.staging.rabbitmq.vhost }}"
+  loop_control:
+    label: "{{ item.vhost }}"
+  changed_when: false
+
+- name: Ensure RabbitMQ users exist or passwords are updated
+  shell: |
+    if docker exec rabbitmq rabbitmqctl list_users -q | awk '{print $1}' | grep -Fxq '{{ item.username }}'; then
+      docker exec rabbitmq rabbitmqctl change_password '{{ item.username }}' '{{ item.password }}'
+    else
+      docker exec rabbitmq rabbitmqctl add_user '{{ item.username }}' '{{ item.password }}'
+    fi
+    docker exec rabbitmq rabbitmqctl set_user_tags '{{ item.username }}'
+  loop:
+    - username: "{{ almonium.deployments.prod.rabbitmq.username }}"
+      password: "{{ almonium_prod.rabbitmq.password }}"
+    - username: "{{ almonium.deployments.staging.rabbitmq.username }}"
+      password: "{{ almonium_staging.rabbitmq.password }}"
+  loop_control:
+    label: "{{ item.username }}"
+  changed_when: false
+
+- name: Ensure RabbitMQ permissions are correct
+  shell: |
+    docker exec rabbitmq rabbitmqctl set_permissions -p '{{ item.vhost }}' '{{ item.username }}' '.*' '.*' '.*'
+  loop:
+    - username: "{{ almonium.deployments.prod.rabbitmq.username }}"
+      vhost: "{{ almonium.deployments.prod.rabbitmq.vhost }}"
+    - username: "{{ almonium.deployments.staging.rabbitmq.username }}"
+      vhost: "{{ almonium.deployments.staging.rabbitmq.vhost }}"
+  loop_control:
+    label: "{{ item.username }} -> {{ item.vhost }}"
+  changed_when: false

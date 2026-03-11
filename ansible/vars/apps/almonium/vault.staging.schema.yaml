@@ -1,0 +1,17 @@
+staging:
+  db:
+    password: ""
+
+  jwt:
+    secret: ""
+
+  stream:
+    key: ""
+    secret: ""
+
+  stripe:
+    key: ""
+    webhook_secret: ""
+
+  rabbitmq:
+    password: ""

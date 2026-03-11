@@ -5,7 +5,9 @@ on:
   push:
     branches: [ main ]
     paths:
+      - 'ansible/**'
       - 'services/postgres/**'
+      - 'scripts/prepare-server-for-ansible.sh'
       - '.github/workflows/deploy-db.yaml'
 
 jobs:
@@ -25,19 +27,8 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
 
-            echo '--- Ensure prereqs (idempotent) ---'
-            if ! command -v ansible >/dev/null; then
-              sudo apt-get update
-              sudo apt-get install -y ansible
-            fi
-            if ! command -v docker >/dev/null; then
-              curl -fsSL https://get.docker.com | sh
-              sudo usermod -aG docker "$USER"
-            fi
-            if ! docker compose version >/dev/null 2>&1; then
-              sudo apt-get install -y docker-compose-plugin
-            fi
-            ansible-galaxy collection install community.docker
+            chmod +x scripts/prepare-server-for-ansible.sh
+            ./scripts/prepare-server-for-ansible.sh
 
             mkdir -p ~/.ansible
             umask 077

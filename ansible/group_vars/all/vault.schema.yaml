@@ -1,0 +1,7 @@
+db_admin_password: ""
+rabbitmq_admin_password: ""
+
+postgres_tenant_passwords:
+  "almonium:prod": ""
+  "almonium:staging": ""
+  "fam_sub:main": ""

@@ -5,7 +5,9 @@ on:
   push:
     branches: [ main ]
     paths:
+      - 'ansible/**'
       - 'rabbitmq/**'
+      - 'scripts/prepare-server-for-ansible.sh'
       - '.github/workflows/deploy-rabbitmq.yaml'
 
 jobs:
@@ -25,7 +27,28 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
 
-            cd /home/almonium/infra/rabbitmq
-            export RABBITMQ_USER="${{ secrets.RABBITMQ_USER }}"
-            export RABBITMQ_PASS="${{ secrets.RABBITMQ_PASS }}"
-            docker compose up -d --remove-orphans
+            chmod +x scripts/prepare-server-for-ansible.sh
+            ./scripts/prepare-server-for-ansible.sh
+
+            mkdir -p ~/.ansible
+            umask 077
+
+            VAULT_ALL="$(mktemp ~/.ansible/vault-pass-all.XXXXXX)"
+            VAULT_PROD="$(mktemp ~/.ansible/vault-pass-prod.XXXXXX)"
+            VAULT_STAGING="$(mktemp ~/.ansible/vault-pass-staging.XXXXXX)"
+
+            trap 'rm -f "$VAULT_ALL" "$VAULT_PROD" "$VAULT_STAGING"' EXIT
+
+            printf "%s" "${{ secrets.ANSIBLE_VAULT_PASSWORD_ALL }}" > "$VAULT_ALL"
+            printf "%s" "${{ secrets.ANSIBLE_VAULT_PASSWORD_ALMONIUM_PROD }}" > "$VAULT_ALMONIUM_PROD"
+            printf "%s" "${{ secrets.ANSIBLE_VAULT_PASSWORD_ALMONIUM_STAGING }}" > "$VAULT_ALMONIUM_STAGING"
+
+            ansible-playbook \
+              -i ansible/inventory/oci.ini \
+              ansible/playbook-deploy-rabbitmq.yaml \
+              -l oci \
+              -c local \
+              -e ansible_python_interpreter=/usr/bin/python3 \
+              --vault-id all@"$VAULT_ALL" \
+              --vault-id prod@"$VAULT_ALMONIUM_PROD" \
+              --vault-id staging@"$VAULT_ALMONIUM_STAGING"
