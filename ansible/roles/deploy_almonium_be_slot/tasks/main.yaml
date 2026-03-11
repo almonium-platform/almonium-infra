@@ -1,0 +1,55 @@
+- name: Ensure deployment directory exists
+  ansible.builtin.file:
+    path: "/home/almonium/deploy_slots/{{ docker_compose_project_name }}/{{ deploy_slot }}"
+    state: directory
+    mode: "0755"
+  become: true
+
+- name: Template Docker Compose file
+  ansible.builtin.template:
+    src: app-compose.yaml.j2
+    dest: "/home/almonium/deploy_slots/{{ docker_compose_project_name }}/{{ deploy_slot }}/docker-compose.yaml"
+    mode: "0644"
+  become: true
+
+- name: Pull Docker image
+  community.docker.docker_image:
+    name: "ghcr.io/almonium-platform/almonium-be:{{ deploy_image_tag }}"
+    source: pull
+  register: pull_result
+  retries: 3
+  delay: 10
+  until: pull_result is succeeded
+
+- name: Deploy app service
+  community.docker.docker_compose_v2:
+    project_src: "/home/almonium/deploy_slots/{{ docker_compose_project_name }}/{{ deploy_slot }}"
+    project_name: "{{ docker_compose_project_name }}_{{ deploy_slot }}"
+    state: present
+    remove_orphans: true
+    pull: "never"
+    services:
+      - app
+    recreate: always
+  register: compose_up_result
+
+- name: Wait for slot to become healthy
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ local_healthcheck_port }}{{ almonium.shared.context_path }}/actuator/health"
+    method: GET
+  register: health_check_result
+  until: health_check_result.json is defined and health_check_result.json.status == "UP"
+  retries: 60
+  delay: 3
+  ignore_errors: true
+
+- name: Fail if health check did not succeed
+  ansible.builtin.fail:
+    msg: |
+      Health check failed for {{ docker_compose_project_name }}_{{ deploy_slot }} on port {{ local_healthcheck_port }}.
+      Last response: {{ health_check_result.content | default('No content') }}
+  when: health_check_result.json is not defined or health_check_result.json.status != "UP"
+
+- name: Slot is healthy
+  ansible.builtin.debug:
+    msg: "✅ Container {{ docker_compose_project_name }}_{{ deploy_slot }} is healthy."

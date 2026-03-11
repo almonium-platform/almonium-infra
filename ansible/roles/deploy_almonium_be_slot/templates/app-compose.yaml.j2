@@ -1,0 +1,93 @@
+services:
+  app:
+    image: "ghcr.io/almonium-platform/almonium-be:{{ deploy_image_tag }}"
+    container_name: "app_{{ deploy_environment }}_{{ deploy_slot }}"
+    environment:
+      DEPLOY_IMAGE_TAG: "{{ deploy_image_tag }}"
+      DEPLOY_SLOT: "{{ deploy_slot }}"
+      DEPLOY_ENVIRONMENT: "{{ deploy_environment }}"
+
+      APP_INTERNAL_PORT: "{{ app_internal_port }}"
+      SERVER_PORT: "{{ app_internal_port }}"
+      LOCAL_PORT: "{{ almonium.shared.local_port }}"
+      DEBUG_PORT: "{{ almonium.shared.debug_port }}"
+      CONTEXT_PATH: "{{ almonium.shared.context_path }}"
+
+      API_HOSTNAME: "{{ app_cfg.api_hostname }}"
+      SPRING_PROFILE: "{{ app_cfg.spring_profile }}"
+
+      DB_NAME: "{{ app_cfg.db.name }}"
+      DB_HOST: "{{ platform.db.host }}"
+      DB_PORT: "{{ platform.db.port }}"
+      DB_SCHEMA: "{{ app_cfg.db.schema }}"
+      DB_USERNAME: "{{ app_cfg.db.username }}"
+      DB_PASSWORD: "{{ almonium_env.db.password }}"
+
+      JWT_SECRET: "{{ almonium_env.jwt.secret }}"
+
+      RABBITMQ_HOST: "{{ platform.rabbitmq.host }}"
+      RABBITMQ_PORT: "{{ platform.rabbitmq.port }}"
+      RABBITMQ_USER: "{{ app_cfg.rabbitmq.username }}"
+      RABBITMQ_PASS: "{{ almonium_env.rabbitmq.password }}"
+      RABBITMQ_VHOST: "{{ app_cfg.rabbitmq.vhost }}"
+
+      STREAM_KEY: "{{ almonium_env.stream.key }}"
+      STREAM_SECRET: "{{ almonium_env.stream.secret }}"
+
+      STRIPE_KEY: "{{ almonium_env.stripe.key }}"
+      STRIPE_WEBHOOK_SECRET: "{{ almonium_env.stripe.webhook_secret }}"
+
+      OPENAI_KEY: "{{ almonium_shared.openai_key }}"
+      GEMINI_API_KEY: "{{ almonium_shared.gemini_api_key }}"
+      RAPID_API_KEY: "{{ almonium_shared.rapid_api_key }}"
+      WORDNIK_KEY: "{{ almonium_shared.wordnik_key }}"
+      YANDEX_KEY: "{{ almonium_shared.yandex_key }}"
+
+      GOOGLE_PROJECT_ID: "{{ almonium.shared.google_project_id }}"
+      GOOGLE_SERVICE_ACCOUNT_KEY_BASE64: "{{ almonium_shared.google_service_account_key_base64 }}"
+      FIREBASE_STORAGE_BUCKET: "{{ almonium.shared.firebase_storage_bucket }}"
+
+      GOOGLE_ID: "{{ almonium.shared.google_id }}"
+      GOOGLE_SECRET: "{{ almonium_shared.google_secret }}"
+      FACEBOOK_ID: "{{ almonium.shared.facebook_id }}"
+      FACEBOOK_SECRET: "{{ almonium_shared.facebook_secret }}"
+      APPLE_ID: "{{ almonium.shared.apple_id }}"
+      APPLE_SECRET: "{{ almonium_shared.apple_secret }}"
+
+      MAIL_USERNAME: "{{ almonium.shared.mail_username }}"
+      MAIL_PASSWORD: "{{ almonium_shared.mail_password }}"
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy-net"
+      - "traefik.http.services.app-svc-{{ deploy_environment }}-{{ deploy_slot }}.loadbalancer.server.port={{ app_internal_port }}"
+      - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.rule=Host(`{{ app_cfg.api_hostname }}`)"
+      - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.entrypoints=websecure"
+      - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.tls=true"
+      - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.tls.certresolver=porkbun"
+      - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.service=app-svc-{{ deploy_environment }}-{{ deploy_slot }}"
+      - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.priority=100"
+
+    ports:
+      - "{{ local_healthcheck_port }}:{{ app_internal_port }}"
+
+    networks:
+      - proxy-net
+      - broker-net
+      - db-net
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:{{ app_internal_port }}{{ almonium.shared.context_path }}/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+    restart: unless-stopped
+
+networks:
+  proxy-net:
+    external: true
+  broker-net:
+    external: true
+  db-net:
+    external: true

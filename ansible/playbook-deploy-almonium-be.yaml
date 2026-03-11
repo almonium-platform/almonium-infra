@@ -1,11 +1,45 @@
-- name: Deploy Almonium BE Application (Blue/Green with Ansible)
+- name: Deploy Almonium BE application
   hosts: all
   gather_facts: false
+
   vars:
     # All --extra-vars from GitHub Actions are available here
     infra_root: "/home/almonium/infra"
     project_name_base: "almonium-be"
     app_internal_port: "9998"
+
+  pre_tasks:
+    - name: Load Almonium app vars
+      ansible.builtin.include_vars:
+        name: almonium
+        file: "{{ playbook_dir }}/vars/apps/almonium/vars.yaml"
+
+    - name: Load Almonium shared secrets
+      ansible.builtin.include_vars:
+        name: almonium_shared
+        file: "{{ playbook_dir }}/vars/apps/almonium/vault.shared.yaml"
+
+    - name: Load Almonium prod secrets
+      ansible.builtin.include_vars:
+        name: almonium_env
+        file: "{{ playbook_dir }}/vars/apps/almonium/vault.prod.yaml"
+      when: deploy_environment == "prod"
+
+    - name: Load Almonium staging secrets
+      ansible.builtin.include_vars:
+        name: almonium_env
+        file: "{{ playbook_dir }}/vars/apps/almonium/vault.staging.yaml"
+      when: deploy_environment == "staging"
+
+    - name: Validate deploy environment
+      ansible.builtin.assert:
+        that:
+          - deploy_environment in ["prod", "staging"]
+        fail_msg: "deploy_environment must be prod or staging"
+
+    - name: Select deployment config
+      ansible.builtin.set_fact:
+        app_cfg: "{{ almonium.deployments[deploy_environment] }}"
 
   tasks:
     - name: Determine project name suffix and color file path
@@ -47,26 +81,17 @@
       ansible.builtin.set_fact:
         docker_compose_project_name: "{{ project_name_base }}{{ project_name_suffix }}"
 
-    - name: Log in to GitHub Container Registry (GHCR)
+    - name: Log in to GitHub Container Registry
       community.docker.docker_login:
         registry: ghcr.io
-        username: "{{ deploy_gh_actor }}" # Passed as --extra-var from GH Action
-        password: "{{ deploy_gh_token }}" # Passed as --extra-var from GH Action
-      # This task should be run once per playbook execution
+        username: "{{ deploy_gh_actor }}"
+        password: "{{ deploy_gh_token }}"
 
-    # --- Use import_role INSTEAD of include_role ---
-    - name: "Deploy TARGET slot: {{ deploy_slot }}"
+    - name: Deploy target slot
       ansible.builtin.import_role:
-        name: deploy_app_slot
-      # When using import_role, variables are inherited from the play's context.
-      # We don't need a separate 'vars:' block here as long as the variables
-      # are already defined as facts or vars in the play. All your set_fact tasks
-      # and the --extra-vars from GitHub Actions make them available.
-      # This simplifies the call and often avoids scoping issues.
+        name: deploy_almonium_be_slot
 
-    # The tasks from deploy_app_slot/tasks/main.yaml will be executed here now.
-
-    - name: "Stop and remove PREVIOUS slot: {{ previous_slot }}"
+    - name: Stop and remove previous slot
       ansible.builtin.command: >-
         docker stop app_{{ deploy_environment }}_{{ previous_slot }} &&
         docker rm app_{{ deploy_environment }}_{{ previous_slot }}
@@ -75,13 +100,13 @@
       failed_when: false
       when: previous_slot is defined and previous_slot != '' and previous_slot != deploy_slot
 
-    - name: "Update color file to point to next slot"
+    - name: Update color file to point to next slot
       ansible.builtin.copy:
         content: "{{ 'green' if deploy_slot == 'blue' else 'blue' }}"
         dest: "{{ color_file_path }}"
-        mode: '0644'
+        mode: "0644"
       become: yes
 
-    - name: "Deployment Summary"
+    - name: Deployment summary
       ansible.builtin.debug:
-        msg: "✅ Deploy for ENV: [{{ deploy_environment }}], successfully switched to SLOT: [{{ deploy_slot }}] for HOSTNAME: [{{ api_hostname }}]"
+        msg: "✅ Deploy for {{ deploy_environment }} switched to {{ deploy_slot }} on {{ app_cfg.api_hostname }}"
