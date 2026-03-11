@@ -34,8 +34,8 @@ jobs:
             umask 077
 
             VAULT_ALL="$(mktemp ~/.ansible/vault-pass-all.XXXXXX)"
-            VAULT_PROD="$(mktemp ~/.ansible/vault-pass-prod.XXXXXX)"
-            VAULT_STAGING="$(mktemp ~/.ansible/vault-pass-staging.XXXXXX)"
+            VAULT_ALMONIUM_PROD="$(mktemp ~/.ansible/vault-pass-almonium-prod.XXXXXX)"
+            VAULT_ALMONIUM_STAGING="$(mktemp ~/.ansible/vault-pass-almonium-staging.XXXXXX)"
 
             trap 'rm -f "$VAULT_ALL" "$VAULT_PROD" "$VAULT_STAGING"' EXIT
 
