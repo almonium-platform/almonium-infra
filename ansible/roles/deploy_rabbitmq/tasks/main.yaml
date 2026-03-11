@@ -1,17 +1,17 @@
 - name: Load Almonium app vars
   include_vars:
     name: almonium
-    file: "{{ playbook_dir }}/../vars/apps/almonium/vars.yaml"
+    file: "{{ playbook_dir }}/vars/apps/almonium/vars.yaml"
 
 - name: Load Almonium prod secrets
   include_vars:
     name: almonium_prod
-    file: "{{ playbook_dir }}/../vars/apps/almonium/vault.prod.yaml"
+    file: "{{ playbook_dir }}/vars/apps/almonium/vault.prod.yaml"
 
 - name: Load Almonium staging secrets
   include_vars:
     name: almonium_staging
-    file: "{{ playbook_dir }}/../vars/apps/almonium/vault.staging.yaml"
+    file: "{{ playbook_dir }}/vars/apps/almonium/vault.staging.yaml"
 
 - name: Validate RabbitMQ admin vars
   assert:

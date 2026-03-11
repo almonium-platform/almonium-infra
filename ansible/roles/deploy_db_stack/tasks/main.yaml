@@ -85,7 +85,7 @@
 
 - name: Push compose file
   copy:
-    src: "{{ playbook_dir }}/../services/postgres/docker-compose.yaml"
+    src: "{{ playbook_dir }}/services/postgres/docker-compose.yaml"
     dest: /opt/db/docker-compose.yaml
     mode: "0644"
 
