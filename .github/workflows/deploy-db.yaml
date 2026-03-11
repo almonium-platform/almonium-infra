@@ -27,9 +27,6 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
 
-            chmod +x scripts/prepare-server-for-ansible.sh
-            ./scripts/prepare-server-for-ansible.sh
-
             mkdir -p ~/.ansible
             umask 077
             VAULT_FILE="$(mktemp ~/.ansible/vault-pass-all.XXXXXX)"
