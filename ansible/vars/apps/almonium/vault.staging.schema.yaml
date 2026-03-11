@@ -1,17 +1,16 @@
-staging:
-  db:
-    password: ""
+db:
+  password: ""
 
-  jwt:
-    secret: ""
+jwt:
+  secret: ""
 
-  stream:
-    key: ""
-    secret: ""
+stream:
+  key: ""
+  secret: ""
 
-  stripe:
-    key: ""
-    webhook_secret: ""
+stripe:
+  key: ""
+  webhook_secret: ""
 
-  rabbitmq:
-    password: ""
+rabbitmq:
+  password: ""
