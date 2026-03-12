@@ -34,9 +34,8 @@ jobs:
             printf "%s" "${{ secrets.ANSIBLE_VAULT_PASSWORD_ALL }}" > "$VAULT_FILE"
             
             ansible-playbook \
-              -i ansible/inventory/oci.ini \
+              -i ansible/inventory/hosts.ini \
+              --limit andromeda \
               ansible/playbook-deploy-db.yaml \
-              -l oci \
-              -c local \
               -e ansible_python_interpreter=/usr/bin/python3 \
               --vault-id all@"$VAULT_FILE"
