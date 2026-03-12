@@ -6,44 +6,58 @@ on:
     branches: [ main ]
     paths:
       - 'ansible/**'
-      - 'rabbitmq/**'
-      - 'scripts/prepare-server-for-ansible.sh'
       - '.github/workflows/deploy-rabbitmq.yaml'
 
 jobs:
   deploy_rabbitmq:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Deploy RabbitMQ
-        uses: appleboy/ssh-action@v1
+      - name: Checkout infra repo
+        uses: actions/checkout@v4
+
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.9.1
         with:
-          host: ${{ secrets.CLOUD_HOST }}
-          username: ${{ secrets.CLOUD_USERNAME }}
-          key: ${{ secrets.CLOUD_KEY }}
-          script: |
-            set -euo pipefail
+          ssh-private-key: ${{ secrets.CLOUD_KEY }}
 
-            cd /home/almonium/infra
-            git fetch origin main
-            git reset --hard origin/main
+      - name: Install Ansible and Docker collection
+        run: |
+          set -euo pipefail
+          python -m venv ansible_venv
+          source ansible_venv/bin/activate
+          pip install ansible
+          ansible-galaxy collection install community.docker
 
-            mkdir -p ~/.ansible
-            umask 077
+      - name: Deploy RabbitMQ with Ansible
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+          VAULT_PASS_ALL: ${{ secrets.ANSIBLE_VAULT_PASSWORD_ALL }}
+          VAULT_PASS_ALMONIUM_PROD: ${{ secrets.ANSIBLE_VAULT_PASSWORD_ALMONIUM_PROD }}
+          VAULT_PASS_ALMONIUM_STAGING: ${{ secrets.ANSIBLE_VAULT_PASSWORD_ALMONIUM_STAGING }}
+        run: |
+          set -euo pipefail
 
-            VAULT_ALL="$(mktemp ~/.ansible/vault-pass-all.XXXXXX)"
-            VAULT_ALMONIUM_PROD="$(mktemp ~/.ansible/vault-pass-almonium-prod.XXXXXX)"
-            VAULT_ALMONIUM_STAGING="$(mktemp ~/.ansible/vault-pass-almonium-staging.XXXXXX)"
+          source ansible_venv/bin/activate
+          cd ansible
 
-            trap 'rm -f "$VAULT_ALL" "VAULT_ALMONIUM_PROD" "VAULT_ALMONIUM_STAGING"' EXIT
+          mkdir -p ~/.ansible
+          umask 077
 
-            printf "%s" "${{ secrets.ANSIBLE_VAULT_PASSWORD_ALL }}" > "$VAULT_ALL"
-            printf "%s" "${{ secrets.ANSIBLE_VAULT_PASSWORD_ALMONIUM_PROD }}" > "$VAULT_ALMONIUM_PROD"
-            printf "%s" "${{ secrets.ANSIBLE_VAULT_PASSWORD_ALMONIUM_STAGING }}" > "$VAULT_ALMONIUM_STAGING"
+          VAULT_ALL="$(mktemp ~/.ansible/vault-pass-all.XXXXXX)"
+          VAULT_ALMONIUM_PROD="$(mktemp ~/.ansible/vault-pass-almonium-prod.XXXXXX)"
+          VAULT_ALMONIUM_STAGING="$(mktemp ~/.ansible/vault-pass-almonium-staging.XXXXXX)"
 
-            ansible-playbook \
-            -i ansible/inventory/hosts.ini \
+          trap 'rm -f "$VAULT_ALL" "$VAULT_ALMONIUM_PROD" "$VAULT_ALMONIUM_STAGING"' EXIT
+
+          printf "%s" "$VAULT_PASS_ALL" > "$VAULT_ALL"
+          printf "%s" "$VAULT_PASS_ALMONIUM_PROD" > "$VAULT_ALMONIUM_PROD"
+          printf "%s" "$VAULT_PASS_ALMONIUM_STAGING" > "$VAULT_ALMONIUM_STAGING"
+
+          ansible-playbook \
+            -i inventory/hosts.ini \
             --limit almonium \
-            ansible/playbook-deploy-rabbitmq.yaml \
+            playbook-deploy-rabbitmq.yaml \
             -e ansible_python_interpreter=/usr/bin/python3 \
             --vault-id all@"$VAULT_ALL" \
             --vault-id almonium_prod@"$VAULT_ALMONIUM_PROD" \
