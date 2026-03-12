@@ -46,6 +46,5 @@ jobs:
             ansible/playbook-deploy-rabbitmq.yaml \
             -e ansible_python_interpreter=/usr/bin/python3 \
             --vault-id all@"$VAULT_ALL" \
-            --vault-id almonium_shared@"$VAULT_ALMONIUM_SHARED" \
             --vault-id almonium_prod@"$VAULT_ALMONIUM_PROD" \
             --vault-id almonium_staging@"$VAULT_ALMONIUM_STAGING"
