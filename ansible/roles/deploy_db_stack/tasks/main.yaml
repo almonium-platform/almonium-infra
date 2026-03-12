@@ -4,6 +4,26 @@
     state: directory
     mode: "0755"
 
+- name: Ensure Docker is installed
+  ansible.builtin.shell: |
+    if ! command -v docker >/dev/null 2>&1; then
+      curl -fsSL https://get.docker.com | sh
+    fi
+  args:
+    executable: /bin/bash
+  changed_when: false
+
+- name: Ensure docker compose plugin is installed
+  ansible.builtin.package:
+    name: docker-compose-plugin
+    state: present
+
+- name: Ensure Docker service is running
+  ansible.builtin.systemd:
+    name: docker
+    enabled: true
+    state: started
+
 - name: Validate PostgreSQL tenant declarations exist
   assert:
     that:
