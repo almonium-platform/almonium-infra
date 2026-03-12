@@ -7,35 +7,48 @@ on:
     paths:
       - 'ansible/**'
       - 'services/postgres/**'
-      - 'scripts/prepare-server-for-ansible.sh'
       - '.github/workflows/deploy-db.yaml'
 
 jobs:
   deploy-db:
     runs-on: ubuntu-latest
+
     steps:
-      - name: SSH, pull + run ansible
-        uses: appleboy/ssh-action@v1
+      - name: Checkout infra repo
+        uses: actions/checkout@v4
+
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.9.1
         with:
-          host: ${{ secrets.CLOUD_HOST }}
-          username: ${{ secrets.CLOUD_USERNAME }}
-          key: ${{ secrets.CLOUD_KEY }}
-          script: |
-            set -euo pipefail
+          ssh-private-key: ${{ secrets.CLOUD_KEY }}
 
-            cd /home/almonium/infra
-            git fetch origin main
-            git reset --hard origin/main
+      - name: Install Ansible and Docker collection
+        run: |
+          set -euo pipefail
+          python -m venv ansible_venv
+          source ansible_venv/bin/activate
+          pip install ansible
+          ansible-galaxy collection install community.docker
 
-            mkdir -p ~/.ansible
-            umask 077
-            VAULT_FILE="$(mktemp ~/.ansible/vault-pass-all.XXXXXX)"
-            trap 'rm -f "$VAULT_FILE"' EXIT
-            printf "%s" "${{ secrets.ANSIBLE_VAULT_PASSWORD_ALL }}" > "$VAULT_FILE"
-            
-            ansible-playbook \
-              -i ansible/inventory/hosts.ini \
-              --limit andromeda \
-              ansible/playbook-deploy-db.yaml \
-              -e ansible_python_interpreter=/usr/bin/python3 \
-              --vault-id all@"$VAULT_FILE"
+      - name: Deploy Postgres with Ansible
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+          VAULT_PASS_ALL: ${{ secrets.ANSIBLE_VAULT_PASSWORD_ALL }}
+        run: |
+          set -euo pipefail
+
+          source ansible_venv/bin/activate
+          cd ansible
+
+          mkdir -p ~/.ansible
+          umask 077
+          VAULT_FILE="$(mktemp ~/.ansible/vault-pass-all.XXXXXX)"
+          trap 'rm -f "$VAULT_FILE"' EXIT
+          printf "%s" "$VAULT_PASS_ALL" > "$VAULT_FILE"
+
+          ansible-playbook \
+            -i inventory/hosts.ini \
+            --limit andromeda \
+            playbook-deploy-db.yaml \
+            -e ansible_python_interpreter=/usr/bin/python3 \
+            --vault-id all@"$VAULT_FILE"
