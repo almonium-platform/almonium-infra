@@ -14,7 +14,6 @@ deployments:
   prod:
     api_hostname: "api.almonium.com"
     deploy_environment: "prod"
-    environment_name: "prod"
     spring_profile: "prod"
 
     db:
@@ -29,7 +28,6 @@ deployments:
   staging:
     api_hostname: "staging.api.almonium.com"
     deploy_environment: "staging"
-    environment_name: "staging"
     spring_profile: "staging"
 
     db:
