@@ -1,7 +1,7 @@
 services:
   app:
     image: "ghcr.io/almonium-platform/almonium-be:{{ deploy_image_tag }}"
-    container_name: "app_{{ deploy_environment }}_{{ deploy_slot }}"
+    container_name: "almonium_{{ deploy_environment }}_{{ deploy_slot }}"
     environment:
       DEPLOY_IMAGE_TAG: "{{ deploy_image_tag }}"
       DEPLOY_SLOT: "{{ deploy_slot }}"

@@ -93,8 +93,8 @@
 
     - name: Stop and remove previous slot
       ansible.builtin.command: >-
-        docker stop app_{{ deploy_environment }}_{{ previous_slot }} &&
-        docker rm app_{{ deploy_environment }}_{{ previous_slot }}
+        docker stop almonium_{{ deploy_environment }}_{{ previous_slot }} &&
+        docker rm almonium_{{ deploy_environment }}_{{ previous_slot }}
       register: stop_previous_result
       changed_when: "'Error: No such container' not in stop_previous_result.stderr | default('') and stop_previous_result.rc == 0"
       failed_when: false
