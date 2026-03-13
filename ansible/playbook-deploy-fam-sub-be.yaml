@@ -14,11 +14,6 @@
         name: fam_sub
         file: "{{ playbook_dir }}/vars/apps/fam_sub/vars.yaml"
 
-    - name: Load FamSub shared secrets
-      ansible.builtin.include_vars:
-        name: fam_sub_shared
-        file: "{{ playbook_dir }}/vars/apps/fam_sub/vault.shared.yaml"
-
     - name: Load FamSub prod secrets
       ansible.builtin.include_vars:
         name: fam_sub_env
