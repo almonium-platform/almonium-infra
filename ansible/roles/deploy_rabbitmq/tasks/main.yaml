@@ -19,7 +19,7 @@
     state: started
 
 - name: Load RabbitMQ stack vars
-  ansible.builtin.ansible.builtin.include_vars:
+  ansible.builtin.include_vars:
     file: "{{ playbook_dir }}/vars/stacks/rabbitmq/vars.yaml"
 
 - name: Load Almonium app vars
