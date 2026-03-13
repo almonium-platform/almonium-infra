@@ -1,7 +1,7 @@
 shared:
   local_port: "8080"
   debug_port: "5005"
-  context_path: "/"
+  context_path: "/v1"
 
   mail:
     username: "noreply@almonium.com"
