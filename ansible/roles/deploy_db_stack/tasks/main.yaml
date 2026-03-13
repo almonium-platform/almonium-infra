@@ -1,3 +1,11 @@
+- name: Load DB stack vars
+  ansible.builtin.include_vars:
+    file: "{{ playbook_dir }}/vars/stacks/db/vars.yaml"
+
+- name: Load DB stack secrets
+  ansible.builtin.include_vars:
+    file: "{{ playbook_dir }}/vars/stacks/db/vault.yaml"
+
 - name: Ensure host backup dir exists
   file:
     path: /opt/db/backups
