@@ -8,7 +8,7 @@ shared:
 
 deployments:
   prod:
-    api_hostname: "api.famsub.com"
+    api_hostname: "api.famsub.almonium.com"
     deploy_environment: "prod"
     spring_profile: "prod"
 
