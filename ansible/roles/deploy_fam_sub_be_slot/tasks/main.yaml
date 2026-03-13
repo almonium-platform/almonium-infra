@@ -34,7 +34,7 @@
 
 - name: Pull Docker image
   community.docker.docker_image:
-    name: "ghcr.io/almonium-platform/fam-sub-be:{{ deploy_image_tag }}"
+    name: "ghcr.io/okuzan/fam-sub-be:{{ deploy_image_tag }}"
     source: pull
   register: pull_result
   retries: 3
