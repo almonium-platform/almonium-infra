@@ -48,7 +48,7 @@ jobs:
 
           ansible-playbook \
             -i inventory/hosts.ini \
-            --limit andromeda \
+            --limit almonium \
             playbook-deploy-db.yaml \
             -e ansible_python_interpreter=/usr/bin/python3 \
             --vault-id all@"$VAULT_FILE"
