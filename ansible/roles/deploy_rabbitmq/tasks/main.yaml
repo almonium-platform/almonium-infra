@@ -18,18 +18,22 @@
     enabled: true
     state: started
 
+- name: Load RabbitMQ stack vars
+  ansible.builtin.ansible.builtin.include_vars:
+    file: "{{ playbook_dir }}/vars/stacks/rabbitmq/vars.yaml"
+
 - name: Load Almonium app vars
-  include_vars:
+  ansible.builtin.include_vars:
     name: almonium
     file: "{{ playbook_dir }}/vars/apps/almonium/vars.yaml"
 
 - name: Load Almonium prod secrets
-  include_vars:
+  ansible.builtin.include_vars:
     name: almonium_prod
     file: "{{ playbook_dir }}/vars/apps/almonium/vault.prod.yaml"
 
 - name: Load Almonium staging secrets
-  include_vars:
+  ansible.builtin.include_vars:
     name: almonium_staging
     file: "{{ playbook_dir }}/vars/apps/almonium/vault.staging.yaml"
 
@@ -94,7 +98,6 @@
     - vhost: "{{ almonium.deployments.staging.rabbitmq.vhost }}"
   loop_control:
     label: "{{ item.vhost }}"
-  changed_when: false
 
 - name: Ensure RabbitMQ users exist or passwords are updated
   shell: |
@@ -111,7 +114,6 @@
       password: "{{ almonium_staging.rabbitmq.password }}"
   loop_control:
     label: "{{ item.username }}"
-  changed_when: false
 
 - name: Ensure RabbitMQ permissions are correct
   shell: |
@@ -123,4 +125,3 @@
       vhost: "{{ almonium.deployments.staging.rabbitmq.vhost }}"
   loop_control:
     label: "{{ item.username }} -> {{ item.vhost }}"
-  changed_when: false

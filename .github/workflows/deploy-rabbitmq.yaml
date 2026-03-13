@@ -32,7 +32,6 @@ jobs:
       - name: Deploy RabbitMQ with Ansible
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
-          VAULT_PASS_ALL: ${{ secrets.ANSIBLE_VAULT_PASSWORD_ALL }}
           VAULT_PASS_ALMONIUM_PROD: ${{ secrets.ANSIBLE_VAULT_PASSWORD_ALMONIUM_PROD }}
           VAULT_PASS_ALMONIUM_STAGING: ${{ secrets.ANSIBLE_VAULT_PASSWORD_ALMONIUM_STAGING }}
         run: |
@@ -44,13 +43,11 @@ jobs:
           mkdir -p ~/.ansible
           umask 077
 
-          VAULT_ALL="$(mktemp ~/.ansible/vault-pass-all.XXXXXX)"
           VAULT_ALMONIUM_PROD="$(mktemp ~/.ansible/vault-pass-almonium-prod.XXXXXX)"
           VAULT_ALMONIUM_STAGING="$(mktemp ~/.ansible/vault-pass-almonium-staging.XXXXXX)"
 
-          trap 'rm -f "$VAULT_ALL" "$VAULT_ALMONIUM_PROD" "$VAULT_ALMONIUM_STAGING"' EXIT
+          trap 'rm -f "$VAULT_ALMONIUM_PROD" "$VAULT_ALMONIUM_STAGING"' EXIT
 
-          printf "%s" "$VAULT_PASS_ALL" > "$VAULT_ALL"
           printf "%s" "$VAULT_PASS_ALMONIUM_PROD" > "$VAULT_ALMONIUM_PROD"
           printf "%s" "$VAULT_PASS_ALMONIUM_STAGING" > "$VAULT_ALMONIUM_STAGING"
 
@@ -59,6 +56,5 @@ jobs:
             --limit almonium \
             playbook-deploy-rabbitmq.yaml \
             -e ansible_python_interpreter=/usr/bin/python3 \
-            --vault-id all@"$VAULT_ALL" \
             --vault-id almonium_prod@"$VAULT_ALMONIUM_PROD" \
             --vault-id almonium_staging@"$VAULT_ALMONIUM_STAGING"

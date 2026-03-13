@@ -33,7 +33,7 @@ jobs:
       - name: Deploy Postgres with Ansible
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
-          VAULT_PASS_ALL: ${{ secrets.ANSIBLE_VAULT_PASSWORD_ALL }}
+          VAULT_PASS_DB: ${{ secrets.ANSIBLE_VAULT_PASSWORD_DB }}
         run: |
           set -euo pipefail
 
@@ -42,13 +42,13 @@ jobs:
 
           mkdir -p ~/.ansible
           umask 077
-          VAULT_FILE="$(mktemp ~/.ansible/vault-pass-all.XXXXXX)"
+          VAULT_FILE="$(mktemp ~/.ansible/vault-pass-db.XXXXXX)"
           trap 'rm -f "$VAULT_FILE"' EXIT
-          printf "%s" "$VAULT_PASS_ALL" > "$VAULT_FILE"
+          printf "%s" "$VAULT_PASS_DB" > "$VAULT_FILE"
 
           ansible-playbook \
             -i inventory/hosts.ini \
             --limit almonium \
             playbook-deploy-db.yaml \
             -e ansible_python_interpreter=/usr/bin/python3 \
-            --vault-id all@"$VAULT_FILE"
+            --vault-id db@"$VAULT_FILE"

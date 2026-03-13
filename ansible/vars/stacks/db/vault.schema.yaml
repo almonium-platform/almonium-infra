@@ -1,0 +1,6 @@
+db_admin_password: "zw5hIlQk0pIUlU"
+
+postgres_tenant_passwords:
+  "almonium:prod": "Ts1hkmRQrdtJP9"
+  "almonium:staging": "AV0yqEL2qFhD8a"
+  "fam_sub:prod": "2Wv1cARh7vRbiF"

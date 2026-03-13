@@ -1,0 +1,23 @@
+db_admin_user: "postgres"
+
+postgres_app_tenants:
+  - app_id: "almonium"
+    environment: "prod"
+    db_name: "almonium"
+    db_user: "almonium_prod"
+    db_schema: "public"
+    backup: true
+
+  - app_id: "almonium"
+    environment: "staging"
+    db_name: "almonium_staging"
+    db_user: "almonium_staging"
+    db_schema: "public"
+    backup: true
+
+  - app_id: "fam_sub"
+    environment: "prod"
+    db_name: "fam_sub"
+    db_user: "fam_sub_user"
+    db_schema: "public"
+    backup: true
