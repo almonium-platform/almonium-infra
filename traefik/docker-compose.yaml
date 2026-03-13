@@ -13,6 +13,7 @@ services:
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--certificatesresolvers.porkbun.acme.email=tech@almonium.com"
       - "--certificatesresolvers.porkbun.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.porkbun.acme.dnschallenge=true"
       - "--certificatesresolvers.porkbun.acme.dnschallenge.provider=porkbun"
     ports:
       - "80:80"
@@ -30,4 +31,5 @@ services:
 
 networks:
   proxy-net:
+    external: true
     name: proxy-net
