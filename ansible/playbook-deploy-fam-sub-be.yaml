@@ -6,7 +6,7 @@
     # All --extra-vars from GitHub Actions are available here
     infra_root: "/home/almonium/infra"
     project_name_base: "fam-sub-be"
-    app_internal_port: "9988"
+    app_internal_port: "8080"
 
   pre_tasks:
     - name: Load FamSub app vars
@@ -60,7 +60,7 @@
     - name: Set local healthcheck port for target deploy_slot
       ansible.builtin.set_fact:
         local_healthcheck_port: >-
-          {{- '9991' if deploy_slot == 'blue' else '9992' -}}
+          {{- '8881' if deploy_slot == 'blue' else '8882' -}}
 
     - name: Set Docker Compose project name base for environment
       ansible.builtin.set_fact:

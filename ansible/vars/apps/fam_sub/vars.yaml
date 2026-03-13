@@ -1,6 +1,6 @@
 shared:
-  local_port: "9988"
-  debug_port: "5006"
+  local_port: "8080"
+  debug_port: "5005"
   context_path: "/"
 
   mail:
