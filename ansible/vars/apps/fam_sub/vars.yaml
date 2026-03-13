@@ -1,5 +1,5 @@
 shared:
-  local_port: "9999"
+  local_port: "9988"
   debug_port: "5006"
   context_path: "/"
 

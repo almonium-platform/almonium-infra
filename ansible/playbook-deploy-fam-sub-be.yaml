@@ -6,7 +6,7 @@
     # All --extra-vars from GitHub Actions are available here
     infra_root: "/home/almonium/infra"
     project_name_base: "fam-sub-be"
-    app_internal_port: "9999"
+    app_internal_port: "9988"
 
   pre_tasks:
     - name: Load FamSub app vars
