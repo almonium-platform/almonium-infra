@@ -3,17 +3,10 @@ services:
     image: "ghcr.io/almonium-platform/almonium-be:{{ deploy_image_tag }}"
     container_name: "almonium_{{ deploy_environment }}_{{ deploy_slot }}"
     environment:
-      DEPLOY_IMAGE_TAG: "{{ deploy_image_tag }}"
-      DEPLOY_SLOT: "{{ deploy_slot }}"
-      DEPLOY_ENVIRONMENT: "{{ deploy_environment }}"
-
-      APP_INTERNAL_PORT: "{{ app_internal_port }}"
-      SERVER_PORT: "{{ app_internal_port }}"
       LOCAL_PORT: "{{ almonium.shared.local_port }}"
       DEBUG_PORT: "{{ almonium.shared.debug_port }}"
       CONTEXT_PATH: "{{ almonium.shared.context_path }}"
 
-      API_HOSTNAME: "{{ app_cfg.api_hostname }}"
       SPRING_PROFILE: "{{ app_cfg.spring_profile }}"
 
       DB_NAME: "{{ app_cfg.db.name }}"
