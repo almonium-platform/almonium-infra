@@ -22,6 +22,10 @@
   ansible.builtin.include_vars:
     file: "{{ playbook_dir }}/vars/stacks/rabbitmq/vars.yaml"
 
+- name: Load RabbitMQ stack secrets
+  ansible.builtin.include_vars:
+    file: "{{ playbook_dir }}/vars/stacks/rabbitmq/vault.yaml"
+
 - name: Load Almonium app vars
   ansible.builtin.include_vars:
     name: almonium

@@ -34,6 +34,7 @@ jobs:
           ANSIBLE_HOST_KEY_CHECKING: "False"
           VAULT_PASS_ALMONIUM_PROD: ${{ secrets.ANSIBLE_VAULT_PASSWORD_ALMONIUM_PROD }}
           VAULT_PASS_ALMONIUM_STAGING: ${{ secrets.ANSIBLE_VAULT_PASSWORD_ALMONIUM_STAGING }}
+          VAULT_PASS_RABBITMQ: ${{ secrets.ANSIBLE_VAULT_PASSWORD_RABBITMQ }}
         run: |
           set -euo pipefail
 
@@ -45,11 +46,13 @@ jobs:
 
           VAULT_ALMONIUM_PROD="$(mktemp ~/.ansible/vault-pass-almonium-prod.XXXXXX)"
           VAULT_ALMONIUM_STAGING="$(mktemp ~/.ansible/vault-pass-almonium-staging.XXXXXX)"
+          VAULT_RABBITMQ="$(mktemp ~/.ansible/vault-pass-rabbitmq.XXXXXX)"
 
-          trap 'rm -f "$VAULT_ALMONIUM_PROD" "$VAULT_ALMONIUM_STAGING"' EXIT
+          trap 'rm -f "$VAULT_ALMONIUM_PROD" "$VAULT_ALMONIUM_STAGING" "$VAULT_RABBITMQ"' EXIT
 
           printf "%s" "$VAULT_PASS_ALMONIUM_PROD" > "$VAULT_ALMONIUM_PROD"
           printf "%s" "$VAULT_PASS_ALMONIUM_STAGING" > "$VAULT_ALMONIUM_STAGING"
+          printf "%s" "$VAULT_PASS_RABBITMQ" > "$VAULT_RABBITMQ"
 
           ansible-playbook \
             -i inventory/hosts.ini \
@@ -57,4 +60,5 @@ jobs:
             playbook-deploy-rabbitmq.yaml \
             -e ansible_python_interpreter=/usr/bin/python3 \
             --vault-id almonium_prod@"$VAULT_ALMONIUM_PROD" \
-            --vault-id almonium_staging@"$VAULT_ALMONIUM_STAGING"
+            --vault-id almonium_staging@"$VAULT_ALMONIUM_STAGING" \
+            --vault-id rabbitmq@"$VAULT_RABBITMQ"
