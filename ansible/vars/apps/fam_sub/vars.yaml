@@ -1,0 +1,17 @@
+shared:
+  local_port: "9999"
+  debug_port: "5006"
+  context_path: "/"
+
+  mail:
+    username: "noreply@almonium.com"
+
+deployments:
+  prod:
+    api_hostname: "api.famsub.com"
+    deploy_environment: "prod"
+    spring_profile: "prod"
+
+    db:
+      name: "fam_sub"
+      username: "fam_sub_user"

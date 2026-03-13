@@ -1,0 +1,53 @@
+services:
+  app:
+    image: "ghcr.io/okuzan/fam-sub-be:{{ deploy_image_tag }}"
+    container_name: "famsub_{{ deploy_environment }}_{{ deploy_slot }}"
+    environment:
+      LOCAL_PORT: "{{ fam_sub.shared.local_port }}"
+      DEBUG_PORT: "{{ fam_sub.shared.debug_port }}"
+      CONTEXT_PATH: "{{ fam_sub.shared.context_path }}"
+
+      SPRING_PROFILE: "{{ app_cfg.spring_profile }}"
+
+      DB_NAME: "{{ app_cfg.db.name }}"
+      DB_HOST: "{{ platform.db.host }}"
+      DB_PORT: "{{ platform.db.port }}"
+      DB_USERNAME: "{{ app_cfg.db.username }}"
+      DB_PASSWORD: "{{ fam_sub_env.db.password }}"
+
+      JWT_SECRET: "{{ fam_sub_env.jwt.secret }}"
+
+      MAIL_USERNAME: "{{ fam_sub.shared.mail.username }}"
+      MAIL_PASSWORD: "{{ fam_sub_env.mail.password }}"
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy-net"
+      - "traefik.http.services.app-svc-{{ deploy_environment }}-{{ deploy_slot }}.loadbalancer.server.port={{ app_internal_port }}"
+      - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.rule=Host(`{{ app_cfg.api_hostname }}`)"
+      - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.entrypoints=websecure"
+      - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.tls=true"
+      - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.tls.certresolver=porkbun"
+      - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.service=app-svc-{{ deploy_environment }}-{{ deploy_slot }}"
+      - "traefik.http.routers.app-router-{{ deploy_environment }}-{{ deploy_slot }}.priority=100"
+
+    ports:
+      - "{{ local_healthcheck_port }}:{{ app_internal_port }}"
+
+    networks:
+      - proxy-net
+      - db-net
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:{{ app_internal_port }}{{ fam_sub.shared.context_path }}/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+    restart: unless-stopped
+
+networks:
+  proxy-net:
+    external: true
+  db-net:
+    external: true

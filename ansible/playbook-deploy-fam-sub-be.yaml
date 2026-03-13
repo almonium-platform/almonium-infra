@@ -1,0 +1,102 @@
+- name: Deploy FamSub BE application
+  hosts: all
+  gather_facts: false
+
+  vars:
+    # All --extra-vars from GitHub Actions are available here
+    infra_root: "/home/almonium/infra"
+    project_name_base: "fam-sub-be"
+    app_internal_port: "9999"
+
+  pre_tasks:
+    - name: Load FamSub app vars
+      ansible.builtin.include_vars:
+        name: fam_sub
+        file: "{{ playbook_dir }}/vars/apps/fam_sub/vars.yaml"
+
+    - name: Load FamSub shared secrets
+      ansible.builtin.include_vars:
+        name: fam_sub_shared
+        file: "{{ playbook_dir }}/vars/apps/fam_sub/vault.shared.yaml"
+
+    - name: Load FamSub prod secrets
+      ansible.builtin.include_vars:
+        name: fam_sub_env
+        file: "{{ playbook_dir }}/vars/apps/fam_sub/vault.prod.yaml"
+      when: deploy_environment == "prod"
+
+    - name: Validate deploy environment
+      ansible.builtin.assert:
+        that:
+          - deploy_environment == "prod"
+        fail_msg: "fam-sub-be only supports prod environment"
+
+    - name: Select deployment config
+      ansible.builtin.set_fact:
+        app_cfg: "{{ fam_sub.deployments[deploy_environment] }}"
+
+  tasks:
+    - name: Determine project name suffix and color file path
+      ansible.builtin.set_fact:
+        project_name_suffix: "_{{ deploy_environment }}"
+        color_file_path: "{{ infra_root }}/.next_color_{{ deploy_environment }}_fam_sub"
+
+    - name: Read current color for the environment
+      ansible.builtin.slurp:
+        src: "{{ color_file_path }}"
+      register: color_file_content
+      failed_when: false
+
+    - name: Determine initial color based on file content
+      ansible.builtin.set_fact:
+        _color_from_file: >-
+          {{ color_file_content.content | b64decode
+             if color_file_content.content is defined and color_file_content.content != ""
+             else 'blue' }}
+
+    - name: Set target deploy_slot
+      ansible.builtin.set_fact:
+        deploy_slot: "{{ 'green' if _color_from_file == 'green' else 'blue' }}"
+
+    - name: Set previous_slot based on determined deploy_slot
+      ansible.builtin.set_fact:
+        previous_slot: "{{ 'green' if deploy_slot == 'blue' else 'blue' }}"
+
+    - name: Set local healthcheck port for target deploy_slot
+      ansible.builtin.set_fact:
+        local_healthcheck_port: >-
+          {{- '9991' if deploy_slot == 'blue' else '9992' -}}
+
+    - name: Set Docker Compose project name base for environment
+      ansible.builtin.set_fact:
+        docker_compose_project_name: "{{ project_name_base }}{{ project_name_suffix }}"
+
+    - name: Log in to GitHub Container Registry
+      community.docker.docker_login:
+        registry: ghcr.io
+        username: "{{ deploy_gh_actor }}"
+        password: "{{ deploy_gh_token }}"
+
+    - name: Deploy target slot
+      ansible.builtin.import_role:
+        name: deploy_fam_sub_be_slot
+
+    - name: Stop and remove previous slot
+      ansible.builtin.command: >-
+        docker stop famsub_{{ deploy_environment }}_{{ previous_slot }} &&
+        docker rm famsub_{{ deploy_environment }}_{{ previous_slot }}
+      register: stop_previous_result
+      changed_when: "'Error: No such container' not in stop_previous_result.stderr | default('') and stop_previous_result.rc == 0"
+      failed_when: false
+      when: previous_slot is defined and previous_slot != '' and previous_slot != deploy_slot
+
+    - name: Update color file to point to next slot
+      ansible.builtin.copy:
+        content: "{{ 'green' if deploy_slot == 'blue' else 'blue' }}"
+        dest: "{{ color_file_path }}"
+        mode: "0644"
+      become: yes
+
+    - name: Deployment summary
+      ansible.builtin.debug:
+        msg: "✅ Deploy for {{ deploy_environment }} switched to {{ deploy_slot }} on {{ app_cfg.api_hostname }}"
