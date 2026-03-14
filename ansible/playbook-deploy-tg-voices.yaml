@@ -1,0 +1,10 @@
+- name: Deploy TG voices
+  hosts: all
+
+  tasks:
+    - name: Deploy TG voices
+      community.docker.docker_compose_v2:
+        project_src: /home/almonium/infra/services/tg-voices
+        state: present
+        pull: always
+        remove_orphans: true
