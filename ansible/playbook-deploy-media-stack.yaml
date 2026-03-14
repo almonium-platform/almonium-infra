@@ -1,0 +1,10 @@
+- name: Deploy media stack
+  hosts: all
+
+  tasks:
+    - name: Deploy media stack
+      community.docker.docker_compose_v2:
+        project_src: /home/almonium/infra/services/media-stack
+        state: present
+        pull: always
+        remove_orphans: true

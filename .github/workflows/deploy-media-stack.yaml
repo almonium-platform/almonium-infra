@@ -12,20 +12,15 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy Media Stack
-        uses: appleboy/ssh-action@v1
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Run Ansible Playbook
+        uses: dawidd6/action-ansible-playbook@v3
         with:
-          host: ${{ secrets.CLOUD_HOST }}
-          username: ${{ secrets.CLOUD_USERNAME }}
+          playbook: playbook-deploy-media-stack.yaml
+          directory: ansible
           key: ${{ secrets.CLOUD_KEY }}
-          script: |
-            set -euo pipefail
-
-            cd /home/almonium/infra
-            git fetch origin main
-            git reset --hard origin/main
-            
-            cd /home/almonium/infra/services/media-stack
-
-            docker compose pull
-            docker compose up -d --remove-orphans
+          options: |
+            -i inventory/hosts.ini
+            --limit almonium
