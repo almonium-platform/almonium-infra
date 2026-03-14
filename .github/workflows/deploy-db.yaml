@@ -32,7 +32,6 @@ jobs:
 
       - name: Deploy Postgres with Ansible
         env:
-          ANSIBLE_HOST_KEY_CHECKING: "False"
           VAULT_PASS_DB: ${{ secrets.ANSIBLE_VAULT_PASSWORD_DB }}
         run: |
           set -euo pipefail

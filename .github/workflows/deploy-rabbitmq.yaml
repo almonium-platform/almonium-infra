@@ -31,7 +31,6 @@ jobs:
 
       - name: Deploy RabbitMQ with Ansible
         env:
-          ANSIBLE_HOST_KEY_CHECKING: "False"
           VAULT_PASS_ALMONIUM_PROD: ${{ secrets.ANSIBLE_VAULT_PASSWORD_ALMONIUM_PROD }}
           VAULT_PASS_ALMONIUM_STAGING: ${{ secrets.ANSIBLE_VAULT_PASSWORD_ALMONIUM_STAGING }}
           VAULT_PASS_RABBITMQ: ${{ secrets.ANSIBLE_VAULT_PASSWORD_RABBITMQ }}
