@@ -25,7 +25,7 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
             
-            cd /home/almonium/infra/almonium-fe     
+            cd /home/almonium/infra/services/tg-voices     
 
             docker compose pull
             docker compose up -d --remove-orphans
