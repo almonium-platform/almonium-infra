@@ -16,17 +16,24 @@ jobs:
       - name: Checkout infra repo
         uses: actions/checkout@v5
 
+      - name: Prepare vault password files
+        run: |
+          mkdir -p ~/.ansible
+          umask 077
+          printf "%s" "${{ secrets.ANSIBLE_VAULT_PASSWORD_RABBITMQ }}" > ~/.ansible/vault-rabbitmq
+          printf "%s" "${{ secrets.ANSIBLE_VAULT_PASSWORD_ALMONIUM_PROD }}" > ~/.ansible/vault-almonium-prod
+          printf "%s" "${{ secrets.ANSIBLE_VAULT_PASSWORD_ALMONIUM_STAGING }}" > ~/.ansible/vault-almonium-staging
+
       - name: Run Ansible Playbook
         uses: dawidd6/action-ansible-playbook@v3
         with:
           playbook: playbook-deploy-rabbitmq.yaml
           directory: ansible
           key: ${{ secrets.CLOUD_KEY }}
-          vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD_RABBITMQ }}
           options: |
             -i inventory/hosts.ini
             --limit almonium
             -e ansible_python_interpreter=/usr/bin/python3
-            --vault-id rabbitmq@${{ secrets.ANSIBLE_VAULT_PASSWORD_RABBITMQ }}
-            --vault-id almonium_prod@${{ secrets.ANSIBLE_VAULT_PASSWORD_ALMONIUM_PROD }}
-            --vault-id almonium_staging@${{ secrets.ANSIBLE_VAULT_PASSWORD_ALMONIUM_STAGING }}
+            --vault-id rabbitmq@~/.ansible/vault-rabbitmq
+            --vault-id almonium_prod@~/.ansible/vault-almonium-prod
+            --vault-id almonium_staging@~/.ansible/vault-almonium-staging
