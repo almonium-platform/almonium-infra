@@ -1,5 +1,5 @@
-apple_client_secret: "eyJhbGciOiJFUzI1NiIsImtpZCI6IjY3OFlTQ01TWTkiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiI0NlpGNVlTVjJQIiwiaWF0IjoxNzczNTA1OTU0LCJleHAiOjE3ODkyODI5NTQsImF1ZCI6Imh0dHBzOi8vYXBwbGVpZC5hcHBsZS5jb20iLCJzdWIiOiJjb20uYWxtb25pdW0uYXV0aCJ9.axf3LBZpTeXu7xSI7jq_qhi2fmib1zH8NPbDb8M8AoZJc6ZtXDhgVeH8zlC_wlwNet56efm5PSwdNOnHUuaj7w"
-secret: ""
+apple_client_secret: ""
+facebook_client_secret: ""
 google_client_secret: ""
 google_service_account_key_base64: ""
 mail_password: ""
