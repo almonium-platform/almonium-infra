@@ -1,0 +1,28 @@
+- name: Deploy Almonium frontend
+  hosts: all
+  become: false
+  vars:
+    service_dir: /home/almonium/infra/services/almonium-fe
+
+  tasks:
+    - name: Log in to GitHub Container Registry
+      community.docker.docker_login:
+        registry: ghcr.io
+        username: "{{ deploy_gh_actor }}"
+        password: "{{ deploy_gh_token }}"
+
+    - name: Save deployed image tag to .env file persistently
+      ansible.builtin.lineinfile:
+        path: "{{ service_dir }}/.env"
+        regexp: "^ALMONIUM_FE_{{ deploy_environment | upper }}_IMAGE_TAG="
+        line: "ALMONIUM_FE_{{ deploy_environment | upper }}_IMAGE_TAG={{ deploy_image_tag }}"
+        create: yes
+
+    - name: Pull and restart specific Almonium frontend environment
+      community.docker.docker_compose_v2:
+        project_src: "{{ service_dir }}"
+        state: present
+        services:
+          - "almonium-fe-{{ deploy_environment }}" # E.g., only updates 'almonium-fe-staging'
+        pull: always
+        remove_orphans: true
