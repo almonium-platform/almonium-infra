@@ -1,0 +1,10 @@
+- name: Sync infra repository
+  hosts: all
+
+  tasks:
+    - name: Update infra repository
+      ansible.builtin.git:
+        repo: https://github.com/almonium-platform/almonium-infra.git
+        dest: /home/almonium/infra
+        version: main
+        force: true

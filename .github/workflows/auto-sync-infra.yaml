@@ -10,15 +10,15 @@ jobs:
   sync-ansible:
     runs-on: ubuntu-latest
     steps:
-      - name: SSH and pull Ansible changes
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.CLOUD_HOST }}
-          username: ${{ secrets.CLOUD_USERNAME }}
-          key: ${{ secrets.CLOUD_KEY }}
-          script: |
-            set -euo pipefail
+      - name: Checkout
+        uses: actions/checkout@v6
 
-            cd /home/almonium/infra
-            git fetch origin main
-            git reset --hard origin/main
+      - name: Run Ansible Playbook
+        uses: dawidd6/action-ansible-playbook@v3
+        with:
+          playbook: playbook-sync-infra.yaml
+          directory: ansible
+          key: ${{ secrets.CLOUD_KEY }}
+          options: |
+            -i inventory/hosts.ini
+            --limit almonium
