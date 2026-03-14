@@ -16,48 +16,17 @@ jobs:
       - name: Checkout infra repo
         uses: actions/checkout@v5
 
-      - name: Set up SSH agent
-        uses: webfactory/ssh-agent@v0.10.0
+      - name: Run Ansible Playbook
+        uses: dawidd6/action-ansible-playbook@v3
         with:
-          ssh-private-key: ${{ secrets.CLOUD_KEY }}
-
-      - name: Install Ansible and Docker collection
-        run: |
-          set -euo pipefail
-          python -m venv ansible_venv
-          source ansible_venv/bin/activate
-          pip install ansible
-          ansible-galaxy collection install community.docker
-
-      - name: Deploy RabbitMQ with Ansible
-        env:
-          VAULT_PASS_ALMONIUM_PROD: ${{ secrets.ANSIBLE_VAULT_PASSWORD_ALMONIUM_PROD }}
-          VAULT_PASS_ALMONIUM_STAGING: ${{ secrets.ANSIBLE_VAULT_PASSWORD_ALMONIUM_STAGING }}
-          VAULT_PASS_RABBITMQ: ${{ secrets.ANSIBLE_VAULT_PASSWORD_RABBITMQ }}
-        run: |
-          set -euo pipefail
-
-          source ansible_venv/bin/activate
-          cd ansible
-
-          mkdir -p ~/.ansible
-          umask 077
-
-          VAULT_ALMONIUM_PROD="$(mktemp ~/.ansible/vault-pass-almonium-prod.XXXXXX)"
-          VAULT_ALMONIUM_STAGING="$(mktemp ~/.ansible/vault-pass-almonium-staging.XXXXXX)"
-          VAULT_RABBITMQ="$(mktemp ~/.ansible/vault-pass-rabbitmq.XXXXXX)"
-
-          trap 'rm -f "$VAULT_ALMONIUM_PROD" "$VAULT_ALMONIUM_STAGING" "$VAULT_RABBITMQ"' EXIT
-
-          printf "%s" "$VAULT_PASS_ALMONIUM_PROD" > "$VAULT_ALMONIUM_PROD"
-          printf "%s" "$VAULT_PASS_ALMONIUM_STAGING" > "$VAULT_ALMONIUM_STAGING"
-          printf "%s" "$VAULT_PASS_RABBITMQ" > "$VAULT_RABBITMQ"
-
-          ansible-playbook \
-            -i inventory/hosts.ini \
-            --limit almonium \
-            playbook-deploy-rabbitmq.yaml \
-            -e ansible_python_interpreter=/usr/bin/python3 \
-            --vault-id almonium_prod@"$VAULT_ALMONIUM_PROD" \
-            --vault-id almonium_staging@"$VAULT_ALMONIUM_STAGING" \
-            --vault-id rabbitmq@"$VAULT_RABBITMQ"
+          playbook: playbook-deploy-rabbitmq.yaml
+          directory: ansible
+          key: ${{ secrets.CLOUD_KEY }}
+          vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD_RABBITMQ }}
+          options: |
+            -i inventory/hosts.ini
+            --limit almonium
+            -e ansible_python_interpreter=/usr/bin/python3
+            --vault-id rabbitmq@${{ secrets.ANSIBLE_VAULT_PASSWORD_RABBITMQ }}
+            --vault-id almonium_prod@${{ secrets.ANSIBLE_VAULT_PASSWORD_ALMONIUM_PROD }}
+            --vault-id almonium_staging@${{ secrets.ANSIBLE_VAULT_PASSWORD_ALMONIUM_STAGING }}
