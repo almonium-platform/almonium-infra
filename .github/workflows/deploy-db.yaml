@@ -17,37 +17,14 @@ jobs:
       - name: Checkout infra repo
         uses: actions/checkout@v5
 
-      - name: Set up SSH agent
-        uses: webfactory/ssh-agent@v0.10.0
+      - name: Run Ansible Playbook
+        uses: dawidd6/action-ansible-playbook@v3
         with:
-          ssh-private-key: ${{ secrets.CLOUD_KEY }}
-
-      - name: Install Ansible and Docker collection
-        run: |
-          set -euo pipefail
-          python -m venv ansible_venv
-          source ansible_venv/bin/activate
-          pip install ansible
-          ansible-galaxy collection install community.docker
-
-      - name: Deploy Postgres with Ansible
-        env:
-          VAULT_PASS_DB: ${{ secrets.ANSIBLE_VAULT_PASSWORD_DB }}
-        run: |
-          set -euo pipefail
-
-          source ansible_venv/bin/activate
-          cd ansible
-
-          mkdir -p ~/.ansible
-          umask 077
-          VAULT_FILE="$(mktemp ~/.ansible/vault-pass-db.XXXXXX)"
-          trap 'rm -f "$VAULT_FILE"' EXIT
-          printf "%s" "$VAULT_PASS_DB" > "$VAULT_FILE"
-
-          ansible-playbook \
-            -i inventory/hosts.ini \
-            --limit almonium \
-            playbook-deploy-db.yaml \
-            -e ansible_python_interpreter=/usr/bin/python3 \
-            --vault-id db@"$VAULT_FILE"
+          playbook: playbook-deploy-db.yaml
+          directory: ansible
+          key: ${{ secrets.CLOUD_KEY }}
+          vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD_DB }}
+          options: |
+            -i inventory/hosts.ini
+            --limit almonium
+            -e ansible_python_interpreter=/usr/bin/python3
