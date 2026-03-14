@@ -2,6 +2,7 @@ shared:
   local_port: "8080"
   debug_port: "5005"
   context_path: "/v1"
+  google_client_id: "28756406725-fq5eh5ns953mjjqtsdm9h14ma7efrlv3.apps.googleusercontent.com"
 
   mail:
     username: "noreply@almonium.com"

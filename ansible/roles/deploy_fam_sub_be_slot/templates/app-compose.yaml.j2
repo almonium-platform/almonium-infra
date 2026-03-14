@@ -15,6 +15,9 @@ services:
       DB_USERNAME: "{{ app_cfg.db.username }}"
       DB_PASSWORD: "{{ fam_sub_env.db.password }}"
 
+      GOOGLE_CLIENT_ID: "{{ fam_sub.shared.google_client_id }}"
+      GOOGLE_CLIENT_SECRET: "{{ fam_sub_env.google_client_secret }}"
+
       MAIL_USERNAME: "{{ fam_sub.shared.mail.username }}"
       MAIL_PASSWORD: "{{ fam_sub_env.mail.password }}"
 
