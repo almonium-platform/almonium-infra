@@ -5,6 +5,12 @@
     service_dir: /home/almonium/infra/services/fam-sub-fe
 
   tasks:
+    - name: Log in to GitHub Container Registry
+      community.docker.docker_login:
+        registry: ghcr.io
+        username: "{{ deploy_gh_actor }}"
+        password: "{{ deploy_gh_token }}"
+
     - name: Pull and restart fam-sub frontend
       ansible.builtin.shell: |
         set -euo pipefail
