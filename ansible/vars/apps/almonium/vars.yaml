@@ -3,9 +3,9 @@ shared:
   debug_port: "5005"
   context_path: "/api/v1"
 
-  apple_id: "com.almonium"
-  facebook_id: "1311434966049556"
-  google_id: "33380019461-l4hq3eto00vvvgprtadahm5o2tqj65ti.apps.googleusercontent.com"
+  apple_services_id: "com.almonium"
+  facebook_client_id: "1311434966049556"
+  google_client_id: "33380019461-l4hq3eto00vvvgprtadahm5o2tqj65ti.apps.googleusercontent.com"
   google_project_id: "linguatool"
   firebase_storage_bucket: "almonium.firebasestorage.app"
   mail_username: "noreply@almonium.com"
