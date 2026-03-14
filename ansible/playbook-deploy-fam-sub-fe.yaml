@@ -1,0 +1,15 @@
+- name: Deploy fam-sub frontend
+  hosts: all
+  become: false
+  vars:
+    service_dir: /home/almonium/infra/services/fam-sub-fe
+
+  tasks:
+    - name: Pull and restart fam-sub frontend
+      ansible.builtin.shell: |
+        set -euo pipefail
+        cd "{{ service_dir }}"
+        FAMSUB_FE_IMAGE_TAG="{{ deploy_image_tag }}" docker compose pull
+        FAMSUB_FE_IMAGE_TAG="{{ deploy_image_tag }}" docker compose up -d --remove-orphans
+      args:
+        executable: /bin/bash
