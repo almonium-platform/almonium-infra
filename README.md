@@ -14,7 +14,7 @@ The core components managed by this infrastructure setup include:
   templated with `docker-compose.template.yaml`.
 * **RabbitMQ:** Deployed as a Docker container for message queuing.
 * **Static Sites:** Configurations for serving static frontend applications (e.g., `almonium.com`,
-  `adoptik.almonium.com`, `voices.almonium.com`) via Traefik. *(Update this once migrated)*
+  `voices.almonium.com`) via Traefik.
 
 ## Directory Structure
 
