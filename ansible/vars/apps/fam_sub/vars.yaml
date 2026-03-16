@@ -4,9 +4,6 @@ shared:
   context_path: "/v1"
   google_client_id: "28756406725-fq5eh5ns953mjjqtsdm9h14ma7efrlv3.apps.googleusercontent.com"
 
-  mail:
-    username: "noreply@almonium.com"
-
 deployments:
   prod:
     api_hostname: "api.famsub.almonium.com"

@@ -1,7 +1,5 @@
 db:
   password: ""
 
-mail:
-  password: ""
-
 google_client_secret: "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"
+zepto_api_key: ""
