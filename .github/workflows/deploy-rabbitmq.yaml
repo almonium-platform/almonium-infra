@@ -14,7 +14,7 @@ jobs:
 
     steps:
       - name: Checkout infra repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Prepare vault password files
         run: |
@@ -25,7 +25,7 @@ jobs:
           printf "%s" "${{ secrets.ANSIBLE_VAULT_PASSWORD_ALMONIUM_STAGING }}" > ~/.ansible/vault-almonium-staging
 
       - name: Run Ansible Playbook
-        uses: dawidd6/action-ansible-playbook@v4
+        uses: dawidd6/action-ansible-playbook@v5
         with:
           playbook: playbook-deploy-rabbitmq.yaml
           directory: ansible
