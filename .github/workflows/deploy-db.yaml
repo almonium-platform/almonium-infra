@@ -12,7 +12,7 @@ on:
 jobs:
   deploy-db:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 10
     steps:
       - name: Checkout infra repo
         uses: actions/checkout@v6

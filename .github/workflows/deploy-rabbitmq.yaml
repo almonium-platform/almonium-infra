@@ -11,7 +11,7 @@ on:
 jobs:
   deploy_rabbitmq:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 10
     steps:
       - name: Checkout infra repo
         uses: actions/checkout@v6
