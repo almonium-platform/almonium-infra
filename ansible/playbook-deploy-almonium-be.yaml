@@ -1,5 +1,5 @@
 - name: Deploy Almonium BE application
-  hosts: all
+  hosts: almonium
   gather_facts: false
 
   vars:

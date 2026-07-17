@@ -32,7 +32,7 @@ services:
       - "traefik.http.routers.{{ docker_compose_project_name }}-app-router-{{ deploy_environment }}-{{ deploy_slot }}.priority=100"
 
     ports:
-      - "{{ local_healthcheck_port }}:{{ app_internal_port }}"
+      - "127.0.0.1:{{ local_healthcheck_port }}:{{ app_internal_port }}"
 
     networks:
       - proxy-net

@@ -5,7 +5,9 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'ansible/**'
+      - 'ansible/playbook-deploy-db.yaml'
+      - 'ansible/roles/deploy_db_stack/**'
+      - 'ansible/vars/stacks/db/**'
       - 'services/postgres/**'
       - '.github/workflows/deploy-db.yaml'
 

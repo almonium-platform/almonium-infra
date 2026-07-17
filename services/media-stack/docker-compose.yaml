@@ -32,7 +32,9 @@ services:
       - /home/almonium/syncthing/config:/config
       - /home/almonium/media:/media
     ports:
-      - "8384:8384"
+      # The GUI is served through Traefik; retain only local access for
+      # troubleshooting while preserving Syncthing's device-transfer ports.
+      - "127.0.0.1:8384:8384"
       - "22000:22000/tcp"
       - "21027:21027/udp"
     restart: unless-stopped

@@ -5,7 +5,10 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'ansible/**'
+      - 'ansible/playbook-deploy-rabbitmq.yaml'
+      - 'ansible/roles/deploy_rabbitmq/**'
+      - 'ansible/vars/stacks/rabbitmq/**'
+      - 'ansible/vars/apps/almonium/**'
       - '.github/workflows/deploy-rabbitmq.yaml'
 
 jobs:

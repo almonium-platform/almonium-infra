@@ -1,5 +1,5 @@
 - name: Deploy fam-sub frontend
-  hosts: all
+  hosts: almonium
   become: false
   vars:
     service_dir: /home/almonium/infra/services/fam-sub-fe

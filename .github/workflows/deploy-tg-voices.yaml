@@ -6,6 +6,7 @@ on:
     branches: [ main ]
     paths:
       - 'services/tg-voices/**'
+      - 'ansible/playbook-deploy-tg-voices.yaml'
       - '.github/workflows/deploy-tg-voices.yaml'
 
 jobs:

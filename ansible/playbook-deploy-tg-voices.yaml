@@ -1,5 +1,5 @@
 - name: Deploy TG voices
-  hosts: all
+  hosts: almonium
 
   tasks:
     - name: Update infra repository

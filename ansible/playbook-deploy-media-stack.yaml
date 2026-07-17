@@ -1,5 +1,5 @@
 - name: Deploy media stack
-  hosts: all
+  hosts: almonium
 
   tasks:
     - name: Update infra repository

@@ -6,6 +6,7 @@ on:
     branches: [ main ]
     paths:
       - 'services/media-stack/**'
+      - 'ansible/playbook-deploy-media-stack.yaml'
       - '.github/workflows/deploy-media-stack.yaml'
 
 jobs:
