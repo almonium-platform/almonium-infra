@@ -6,8 +6,10 @@ services:
       RABBITMQ_DEFAULT_USER: "{{ rabbitmq_admin_user }}"
       RABBITMQ_DEFAULT_PASS: "{{ rabbitmq_admin_password }}"
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      # Applications use broker-net directly. Keep administration available
+      # through an SSH tunnel, without exposing RabbitMQ to the Internet.
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     networks:
