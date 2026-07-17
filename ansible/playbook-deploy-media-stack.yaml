@@ -2,6 +2,13 @@
   hosts: all
 
   tasks:
+    - name: Update infra repository
+      ansible.builtin.git:
+        repo: https://github.com/almonium-platform/almonium-infra.git
+        dest: /home/almonium/infra
+        version: main
+        force: true
+
     - name: Deploy media stack
       community.docker.docker_compose_v2:
         project_src: /home/almonium/infra/services/media-stack
