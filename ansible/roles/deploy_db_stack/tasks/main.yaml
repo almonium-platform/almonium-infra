@@ -7,10 +7,15 @@
     file: "{{ playbook_dir }}/vars/stacks/db/vault.yaml"
 
 - name: Ensure host backup dir exists
-  file:
+  ansible.builtin.file:
     path: /opt/db/backups
     state: directory
-    mode: "0755"
+    mode: "0700"
+
+- name: Install restic
+  ansible.builtin.package:
+    name: restic
+    state: present
 
 - name: Ensure Docker is installed
   ansible.builtin.shell: |
@@ -46,6 +51,7 @@
       - item.app_id is defined
       - item.environment is defined
       - item.db_name is defined
+      - item.db_name is match('^[A-Za-z0-9_]+$')
       - item.db_user is defined
       - (postgres_tenant_passwords[item.app_id ~ ':' ~ item.environment]) is defined
       - (postgres_tenant_passwords[item.app_id ~ ':' ~ item.environment] | string | length) > 0
@@ -53,6 +59,60 @@
   loop: "{{ postgres_app_tenants }}"
   loop_control:
     label: "{{ item.app_id }}:{{ item.environment }}"
+
+- name: Validate B2 backup configuration
+  ansible.builtin.assert:
+    that:
+      - db_backup is defined
+      - db_backup.b2 is defined
+      - (db_backup.b2.bucket | default('') | length) > 0
+      - (db_backup.b2.prefix | default('') | length) > 0
+      - (db_backup.b2.application_key_id | default('') | length) > 0
+      - (db_backup.b2.application_key | default('') | length) > 0
+      - (db_backup.restic_password | default('') | length) > 0
+      - db_backup.retention is defined
+    fail_msg: "db_backup B2 credentials, repository password, bucket, prefix, and retention must be configured."
+
+- name: Configure restic backup environment
+  ansible.builtin.template:
+    src: db-backup.env.j2
+    dest: /etc/db-backup.env
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Install database backup script
+  ansible.builtin.template:
+    src: db-backup.sh.j2
+    dest: /usr/local/sbin/db-backup
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Install database backup systemd service
+  ansible.builtin.template:
+    src: db-backup.service.j2
+    dest: /etc/systemd/system/db-backup.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Install database backup systemd timer
+  ansible.builtin.template:
+    src: db-backup.timer.j2
+    dest: /etc/systemd/system/db-backup.timer
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Enable database backup timer
+  ansible.builtin.systemd:
+    name: db-backup.timer
+    enabled: true
+    state: started
+    daemon_reload: true
 
 - name: Check if postgres container exists
   community.docker.docker_container_info:

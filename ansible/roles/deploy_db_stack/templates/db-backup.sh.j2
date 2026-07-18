@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+readonly backup_dir=/opt/db/backups
+readonly db_admin_user={{ db_admin_user | to_json }}
+readonly local_retention=7
+
+exec 9>/run/lock/db-backup.lock
+flock -n 9 || exit 0
+
+if ! docker inspect --format '{{ '{{' }}.State.Running{{ '}}' }}' postgres | grep -qx true; then
+  echo 'PostgreSQL container is not running' >&2
+  exit 1
+fi
+
+timestamp=$(date -u +%Y%m%d-%H%M%S)
+databases=(
+{% for tenant in postgres_app_tenants if tenant.backup | default(false) %}
+  {{ tenant.db_name | to_json }}
+{% endfor %}
+)
+
+for db_name in "${databases[@]}"; do
+  if docker exec postgres psql -U "$db_admin_user" -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '$db_name'" | grep -qx 1; then
+    dump_path="$backup_dir/${db_name}_${timestamp}.dump"
+    docker exec postgres pg_dump -U "$db_admin_user" -Fc -d "$db_name" > "$dump_path"
+
+    mapfile -t expired_dumps < <(find "$backup_dir" -maxdepth 1 -type f -name "${db_name}_*.dump" -printf '%T@ %p\\n' | sort -nr | awk -v keep="$local_retention" 'NR > keep {sub(/^[^ ]+ /, ""); print}')
+    if ((${#expired_dumps[@]})); then
+      rm -f -- "${expired_dumps[@]}"
+    fi
+  fi
+done
+
+restic backup --tag postgres-dumps "$backup_dir"
+restic forget --prune \
+  --keep-daily {{ db_backup.retention.keep_daily }} \
+  --keep-weekly {{ db_backup.retention.keep_weekly }} \
+  --keep-monthly {{ db_backup.retention.keep_monthly }}
