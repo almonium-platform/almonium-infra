@@ -32,6 +32,10 @@ for db_name in "${databases[@]}"; do
   fi
 done
 
+if ! restic cat config >/dev/null 2>&1; then
+  restic init
+fi
+
 restic backup --tag postgres-dumps "$backup_dir"
 restic forget --prune \
   --keep-daily {{ db_backup_config.retention.keep_daily }} \
