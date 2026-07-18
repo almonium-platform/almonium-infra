@@ -6,6 +6,11 @@
   ansible.builtin.include_vars:
     file: "{{ playbook_dir }}/vars/stacks/db/vault.yaml"
 
+- name: Combine public and encrypted backup configuration
+  ansible.builtin.set_fact:
+    db_backup_config: "{{ db_backup_defaults | combine(db_backup, recursive=True) }}"
+  no_log: true
+
 - name: Ensure host backup dir exists
   ansible.builtin.file:
     path: /opt/db/backups
@@ -63,14 +68,14 @@
 - name: Validate B2 backup configuration
   ansible.builtin.assert:
     that:
-      - db_backup is defined
-      - db_backup.b2 is defined
-      - (db_backup.b2.bucket | default('') | length) > 0
-      - (db_backup.b2.prefix | default('') | length) > 0
-      - (db_backup.b2.application_key_id | default('') | length) > 0
-      - (db_backup.b2.application_key | default('') | length) > 0
-      - (db_backup.restic_password | default('') | length) > 0
-      - db_backup.retention is defined
+      - db_backup_config is defined
+      - db_backup_config.b2 is defined
+      - (db_backup_config.b2.bucket | default('') | length) > 0
+      - (db_backup_config.b2.prefix | default('') | length) > 0
+      - (db_backup_config.b2.application_key_id | default('') | length) > 0
+      - (db_backup_config.b2.application_key | default('') | length) > 0
+      - (db_backup_config.restic_password | default('') | length) > 0
+      - db_backup_config.retention is defined
     fail_msg: "db_backup B2 credentials, repository password, bucket, prefix, and retention must be configured."
 
 - name: Configure restic backup environment

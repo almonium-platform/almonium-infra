@@ -2,7 +2,7 @@
 Description=Run PostgreSQL backup to Backblaze B2
 
 [Timer]
-OnCalendar={{ db_backup.schedule }}
+OnCalendar={{ db_backup_config.schedule }}
 Persistent=true
 RandomizedDelaySec=10m
 

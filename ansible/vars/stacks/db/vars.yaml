@@ -1,6 +1,6 @@
 db_admin_user: "postgres"
 
-db_backup:
+db_backup_defaults:
   b2:
     bucket: "56f052a96a4f7d4995f40c16"
     prefix: "almonium-postgres"

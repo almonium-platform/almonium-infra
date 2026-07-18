@@ -34,6 +34,6 @@ done
 
 restic backup --tag postgres-dumps "$backup_dir"
 restic forget --prune \
-  --keep-daily {{ db_backup.retention.keep_daily }} \
-  --keep-weekly {{ db_backup.retention.keep_weekly }} \
-  --keep-monthly {{ db_backup.retention.keep_monthly }}
+  --keep-daily {{ db_backup_config.retention.keep_daily }} \
+  --keep-weekly {{ db_backup_config.retention.keep_weekly }} \
+  --keep-monthly {{ db_backup_config.retention.keep_monthly }}
