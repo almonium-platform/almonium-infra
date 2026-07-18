@@ -108,6 +108,24 @@ existing vault label. Install Ansible dependencies with:
 ansible-galaxy collection install -r ansible/requirements.yaml
 ```
 
-This repository assumes Docker, Docker Compose, Git, the `almonium` server
-user, and the external Docker networks are already present. The database and
-RabbitMQ roles also ensure Docker is installed and running when they execute.
+## Bootstrapping a new host
+
+Before the first deployment, use the bootstrap playbook once from the machine
+that can SSH to the fresh host with a sudo-capable provisioning account:
+
+```bash
+cd ansible
+ansible-galaxy collection install -r requirements.yaml
+ansible-playbook -i inventory/hosts.ini playbook-bootstrap-host.yaml \
+  --limit almonium -e ansible_user=<provisioning-user> --become
+```
+
+It installs Docker (including Compose) and Git, creates the `almonium` user,
+adds it to the `docker` group, copies the provisioning user's authorized SSH
+keys by default, creates the required state directories, and creates
+`proxy-net`, `db-net`, and `broker-net`. Set
+`-e bootstrap_copy_authorized_keys=false` when the `almonium` user's SSH keys
+are managed separately.
+
+The database and RabbitMQ roles also ensure Docker is installed and running,
+so existing hosts remain deployable without first running the bootstrap.

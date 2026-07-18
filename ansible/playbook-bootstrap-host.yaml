@@ -1,0 +1,6 @@
+---
+- name: Bootstrap an Almonium host
+  hosts: almonium
+  become: true
+  roles:
+    - bootstrap_host

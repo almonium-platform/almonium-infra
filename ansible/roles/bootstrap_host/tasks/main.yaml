@@ -1,0 +1,81 @@
+---
+- name: Ensure curl is installed
+  ansible.builtin.package:
+    name: curl
+    state: present
+
+- name: Ensure Docker is installed
+  ansible.builtin.shell: |
+    set -o pipefail
+    curl -fsSL https://get.docker.com | sh
+  args:
+    executable: /bin/bash
+    creates: /usr/bin/docker
+
+- name: Ensure Docker Compose plugin is installed
+  ansible.builtin.package:
+    name: docker-compose-plugin
+    state: present
+
+- name: Ensure Docker service is running
+  ansible.builtin.systemd:
+    name: docker
+    enabled: true
+    state: started
+
+- name: Ensure Git is installed
+  ansible.builtin.package:
+    name: git
+    state: present
+
+- name: Ensure server user exists
+  ansible.builtin.user:
+    name: "{{ bootstrap_user }}"
+    home: "{{ bootstrap_user_home }}"
+    shell: /bin/bash
+    groups: docker
+    append: true
+    state: present
+
+- name: Check provisioning user's authorized keys
+  ansible.builtin.stat:
+    path: "{{ ansible_env.HOME }}/.ssh/authorized_keys"
+  register: bootstrap_source_authorized_keys
+  become: false
+  when: bootstrap_copy_authorized_keys | bool
+
+- name: Read provisioning user's authorized keys
+  ansible.builtin.slurp:
+    src: "{{ ansible_env.HOME }}/.ssh/authorized_keys"
+  register: bootstrap_authorized_keys
+  become: false
+  no_log: true
+  when:
+    - bootstrap_copy_authorized_keys | bool
+    - bootstrap_source_authorized_keys.stat.exists
+
+- name: Authorize provisioning keys for server user
+  ansible.posix.authorized_key:
+    user: "{{ bootstrap_user }}"
+    key: "{{ bootstrap_authorized_keys.content | b64decode }}"
+    state: present
+  no_log: true
+  when:
+    - bootstrap_copy_authorized_keys | bool
+    - bootstrap_source_authorized_keys.stat.exists
+
+- name: Ensure application state directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ bootstrap_user }}"
+    group: "{{ bootstrap_user }}"
+    mode: "0755"
+  loop: "{{ bootstrap_directories }}"
+
+- name: Ensure shared Docker networks exist
+  community.docker.docker_network:
+    name: "{{ item }}"
+    internal: false
+    state: present
+  loop: "{{ bootstrap_docker_networks }}"

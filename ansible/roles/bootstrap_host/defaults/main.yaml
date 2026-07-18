@@ -1,0 +1,14 @@
+---
+bootstrap_user: almonium
+bootstrap_user_home: "/home/{{ bootstrap_user }}"
+bootstrap_copy_authorized_keys: true
+bootstrap_directories:
+  - "{{ bootstrap_user_home }}/infra"
+  - "{{ bootstrap_user_home }}/deploy_slots"
+  - "{{ bootstrap_user_home }}/media"
+  - "{{ bootstrap_user_home }}/syncthing/config"
+  - "{{ bootstrap_user_home }}/voices"
+bootstrap_docker_networks:
+  - proxy-net
+  - db-net
+  - broker-net
