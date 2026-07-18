@@ -2,7 +2,7 @@ db_admin_user: "postgres"
 
 db_backup_defaults:
   b2:
-    bucket: "56f052a96a4f7d4995f40c16"
+    bucket: "oci-db-backup"
     prefix: "almonium-postgres"
   schedule: "*-*-* 03:15:00"
   retention:
