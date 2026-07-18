@@ -71,6 +71,29 @@ repositories can invoke the same server-side conventions.
 - Persistent data is outside disposable containers: PostgreSQL backups live in
   `/opt/db/backups`; Emby and media data live on host-mounted paths.
 
+## PostgreSQL backups
+
+The database role creates fresh custom-format dumps for every tenant marked
+`backup: true`, then stores an encrypted restic snapshot in Backblaze B2. The
+B2 key ID, key, and restic repository password are in the encrypted DB vault;
+the bucket, schedule, and retention policy are in
+`ansible/vars/stacks/db/vars.yaml` under `db_backup_defaults`.
+
+The `db-backup.timer` runs daily at 03:15 server time with up to ten minutes of
+random delay. It keeps seven local dumps per database and retains seven daily,
+four weekly, and twelve monthly remote snapshots.
+
+To inspect or force a backup on the DB host:
+
+```bash
+ssh oci 'sudo systemctl list-timers db-backup.timer --no-pager'
+ssh oci 'sudo systemctl start db-backup.service'
+ssh oci 'sudo journalctl -u db-backup.service -n 50 --no-pager'
+```
+
+The restic password is required to restore data. Keep it in a password manager
+as well as the encrypted vault; it cannot be recovered from Backblaze.
+
 ## Operating it
 
 For routine changes, modify the relevant Compose definition, Ansible playbook,
