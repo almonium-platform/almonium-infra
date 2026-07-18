@@ -1,5 +1,15 @@
 db_admin_user: "postgres"
 
+db_backup:
+  b2:
+    bucket: "56f052a96a4f7d4995f40c16"
+    prefix: "almonium-postgres"
+  schedule: "*-*-* 03:15:00"
+  retention:
+    keep_daily: 7
+    keep_weekly: 4
+    keep_monthly: 12
+
 postgres_app_tenants:
   - app_id: "almonium"
     environment: "prod"

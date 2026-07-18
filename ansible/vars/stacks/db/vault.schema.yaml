@@ -4,3 +4,9 @@ postgres_tenant_passwords:
   "almonium:prod": ""
   "almonium:staging": ""
   "fam_sub:prod": ""
+
+db_backup:
+  restic_password: ""
+  b2:
+    application_key_id: ""
+    application_key: ""
