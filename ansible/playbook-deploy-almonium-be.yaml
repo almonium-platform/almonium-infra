@@ -37,6 +37,29 @@
           - deploy_environment in ["prod", "staging"]
         fail_msg: "deploy_environment must be prod or staging"
 
+    - name: Validate backend image coordinate
+      ansible.builtin.assert:
+        that:
+          - >-
+            (deploy_image_digest | default('')) is match('^sha256:[0-9a-f]{64}$')
+            or (
+              deploy_image_digest | default('') | length == 0
+              and deploy_image_tag | default('') | length > 0
+            )
+        fail_msg: >-
+          deploy_image_digest must have the form sha256:<64 lowercase hex
+          characters>; deploy_image_tag is accepted only for rollout
+          compatibility with the previous backend workflow
+
+    - name: Select backend image reference
+      ansible.builtin.set_fact:
+        deploy_image_reference: >-
+          {{
+            'ghcr.io/almonium-platform/almonium-be@' ~ deploy_image_digest
+            if deploy_image_digest | default('') | length > 0
+            else 'ghcr.io/almonium-platform/almonium-be:' ~ deploy_image_tag
+          }}
+
     - name: Select deployment config
       ansible.builtin.set_fact:
         app_cfg: "{{ almonium.deployments[deploy_environment] }}"

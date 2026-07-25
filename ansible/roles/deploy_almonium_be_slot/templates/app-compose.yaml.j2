@@ -1,6 +1,6 @@
 services:
   app:
-    image: "ghcr.io/almonium-platform/almonium-be:{{ deploy_image_tag }}"
+    image: "{{ deploy_image_reference }}"
     container_name: "almonium_{{ deploy_environment }}_{{ deploy_slot }}"
     environment:
       LOCAL_PORT: "{{ almonium.shared.local_port }}"

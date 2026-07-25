@@ -34,7 +34,7 @@
 
 - name: Pull Docker image
   community.docker.docker_image:
-    name: "ghcr.io/almonium-platform/almonium-be:{{ deploy_image_tag }}"
+    name: "{{ deploy_image_reference }}"
     source: pull
   register: pull_result
   retries: 3
