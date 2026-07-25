@@ -121,6 +121,10 @@ uses the `fam_sub_prod` Vault ID:
 # Generic form
 ansible-vault edit --vault-id <vault-id>@prompt <encrypted-vault-file>
 
+# Almonium production (most commonly used)
+ansible-vault edit --vault-id almonium_prod@prompt \
+  ansible/vars/apps/almonium/vault.prod.yaml
+
 # FamSub production
 ansible-vault view --vault-id fam_sub_prod@prompt \
   ansible/vars/apps/fam_sub/vault.prod.yaml
@@ -128,8 +132,23 @@ ansible-vault edit --vault-id fam_sub_prod@prompt \
   ansible/vars/apps/fam_sub/vault.prod.yaml
 ```
 
-To edit another vault, use the label from its first line and its matching
-encrypted file, for example:
+Vault IDs and their encrypted files are:
+
+| Vault ID | Encrypted file |
+| --- | --- |
+| `almonium_prod` | `ansible/vars/apps/almonium/vault.prod.yaml` |
+| `almonium_staging` | `ansible/vars/apps/almonium/vault.staging.yaml` |
+| `almonium_shared` | `ansible/vars/apps/almonium/vault.shared.yaml` |
+| `fam_sub_prod` | `ansible/vars/apps/fam_sub/vault.prod.yaml` |
+| `db` | `ansible/vars/stacks/db/vault.yaml` |
+| `rabbitmq` | `ansible/vars/stacks/rabbitmq/vault.yaml` |
+
+The Vault ID is the final field in the encrypted file's first line, which
+starts with `$ANSIBLE_VAULT;`. Test canaries under `ansible/vault_canaries/`
+also use the IDs `all`, `prod`, and `staging`; they are not application
+configuration files.
+
+For example, to edit another operational vault:
 
 ```bash
 ansible-vault edit --vault-id db@prompt ansible/vars/stacks/db/vault.yaml
