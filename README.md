@@ -61,6 +61,10 @@ repositories can invoke the same server-side conventions.
 - Encrypted `vault*.yaml` files are committed. Their matching `*.schema.yaml`
   files document the shape only and must never contain real values.
 - GitHub Actions receives SSH and vault passwords through GitHub Secrets.
+- If a schema file contains a credential-shaped value, treat it as exposed:
+  revoke or rotate it at the provider, replace it in the encrypted vault, and
+  remove it from Git history with the repository owners' agreed history-rewrite
+  procedure.
 - RabbitMQ is internal to Docker's `broker-net`. Its AMQP and management ports
   bind only to localhost for troubleshooting through SSH, for example:
 
@@ -106,6 +110,34 @@ existing vault label. Install Ansible dependencies with:
 
 ```bash
 ansible-galaxy collection install -r ansible/requirements.yaml
+```
+
+### Editing Vault values
+
+Ansible Vault encrypts the complete YAML file. For example, FamSub production
+uses the `fam_sub_prod` Vault ID:
+
+```bash
+ansible-vault view --vault-id fam_sub_prod@prompt \
+  ansible/vars/apps/fam_sub/vault.prod.yaml
+ansible-vault edit --vault-id fam_sub_prod@prompt \
+  ansible/vars/apps/fam_sub/vault.prod.yaml
+```
+
+If the password is stored in a local, permission-protected file, replace
+`@prompt` with `@~/.ansible/vault-fam-sub-prod` (and use the same file when
+running the relevant playbook). The other Vault IDs are the labels in the
+first line of each encrypted file, such as `db`, `rabbitmq`,
+`almonium_prod`, and `almonium_staging`.
+
+To add a value, first add its key to the matching `*.schema.yaml` with an empty
+string, then run `ansible-vault edit` and add the real value to the encrypted
+`vault*.yaml`. Never put the real value in the schema, a command-line argument,
+or shell history. After editing, verify that the encrypted file still opens:
+
+```bash
+ansible-vault view --vault-id fam_sub_prod@prompt \
+  ansible/vars/apps/fam_sub/vault.prod.yaml >/dev/null
 ```
 
 ## Bootstrapping a new host
