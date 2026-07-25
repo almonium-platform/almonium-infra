@@ -118,10 +118,23 @@ Ansible Vault encrypts the complete YAML file. For example, FamSub production
 uses the `fam_sub_prod` Vault ID:
 
 ```bash
+# Generic form
+ansible-vault edit --vault-id <vault-id>@prompt <encrypted-vault-file>
+
+# FamSub production
 ansible-vault view --vault-id fam_sub_prod@prompt \
   ansible/vars/apps/fam_sub/vault.prod.yaml
 ansible-vault edit --vault-id fam_sub_prod@prompt \
   ansible/vars/apps/fam_sub/vault.prod.yaml
+```
+
+To edit another vault, use the label from its first line and its matching
+encrypted file, for example:
+
+```bash
+ansible-vault edit --vault-id db@prompt ansible/vars/stacks/db/vault.yaml
+ansible-vault edit --vault-id rabbitmq@prompt \
+  ansible/vars/stacks/rabbitmq/vault.yaml
 ```
 
 If the password is stored in a local, permission-protected file, replace
