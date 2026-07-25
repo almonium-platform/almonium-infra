@@ -16,8 +16,6 @@ services:
       DB_USERNAME: "{{ app_cfg.db.username }}"
       DB_PASSWORD: "{{ almonium_env.db.password }}"
 
-      JWT_SECRET: "{{ almonium_env.jwt.secret }}"
-
       RABBITMQ_HOST: "{{ platform.rabbitmq.host }}"
       RABBITMQ_PORT: "{{ platform.rabbitmq.port }}"
       RABBITMQ_USER: "{{ app_cfg.rabbitmq.username }}"
@@ -30,25 +28,14 @@ services:
       STRIPE_KEY: "{{ almonium_env.stripe.key }}"
       STRIPE_WEBHOOK_SECRET: "{{ almonium_env.stripe.webhook_secret }}"
 
-      OPENAI_KEY: "{{ almonium_shared.openai_key }}"
-      GEMINI_API_KEY: "{{ almonium_shared.gemini_api_key }}"
       RAPID_API_KEY: "{{ almonium_shared.rapid_api_key }}"
       WORDNIK_KEY: "{{ almonium_shared.wordnik_key }}"
       YANDEX_KEY: "{{ almonium_shared.yandex_key }}"
+      ZEPTO_API_KEY: "{{ almonium_shared.zepto_api_key }}"
 
       GOOGLE_PROJECT_ID: "{{ almonium.shared.google_project_id }}"
       GOOGLE_SERVICE_ACCOUNT_KEY_BASE64: "{{ almonium_shared.google_service_account_key_base64 }}"
       FIREBASE_STORAGE_BUCKET: "{{ almonium.shared.firebase_storage_bucket }}"
-
-      GOOGLE_CLIENT_ID: "{{ almonium.shared.google_client_id }}"
-      GOOGLE_CLIENT_SECRET: "{{ almonium_shared.google_client_secret }}"
-      FACEBOOK_CLIENT_ID: "{{ almonium.shared.facebook_client_id }}"
-      FACEBOOK_CLIENT_SECRET: "{{ almonium_shared.facebook_client_secret }}"
-      APPLE_SERVICES_ID: "{{ almonium.shared.apple_services_id }}"
-      APPLE_CLIENT_SECRET: "{{ almonium_shared.apple_client_secret }}"
-
-      MAIL_USERNAME: "{{ almonium.shared.mail_username }}"
-      MAIL_PASSWORD: "{{ almonium_shared.mail_password }}"
 
     labels:
       - "traefik.enable=true"
