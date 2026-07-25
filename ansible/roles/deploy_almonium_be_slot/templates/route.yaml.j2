@@ -1,0 +1,24 @@
+http:
+  routers:
+    almonium-be-{{ deploy_environment }}:
+      rule: "Host(`{{ app_cfg.api_hostname }}`)"
+      priority: 1000
+      entryPoints:
+        - websecure
+      service: almonium-be-{{ deploy_environment }}
+      middlewares:
+        - almonium-be-{{ deploy_environment }}-slot
+      tls:
+        certResolver: porkbun
+
+  services:
+    almonium-be-{{ deploy_environment }}:
+      loadBalancer:
+        servers:
+          - url: "http://almonium_{{ deploy_environment }}_{{ route_slot }}:{{ app_internal_port }}"
+
+  middlewares:
+    almonium-be-{{ deploy_environment }}-slot:
+      headers:
+        customResponseHeaders:
+          X-Almonium-Deploy-Slot: "{{ route_slot }}"

@@ -14,11 +14,12 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Deploy Traefik
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1
         with:
           host: ${{ secrets.CLOUD_HOST }}
           username: ${{ secrets.CLOUD_USERNAME }}
           key: ${{ secrets.CLOUD_KEY }}
+          fingerprint: ${{ secrets.CLOUD_HOST_FINGERPRINT }}
           script: |
             set -euo pipefail
 
@@ -27,6 +28,7 @@ jobs:
             git reset --hard origin/main
 
             cd /home/almonium/infra/traefik
+            mkdir -p /home/almonium/traefik_dynamic
             
             export SHELL_PORKBUN_API_KEY="${{ secrets.PORKBUN_API_KEY }}"
             export SHELL_PORKBUN_SECRET_KEY="${{ secrets.PORKBUN_SECRET_KEY }}"

@@ -15,14 +15,15 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Run Ansible Playbook
-        uses: dawidd6/action-ansible-playbook@v5
+        uses: dawidd6/action-ansible-playbook@3363d6aa333ecb41ef01579bc5eb4412b3d6802f # v5
         with:
           playbook: playbook-deploy-tg-voices.yaml
           directory: ansible
           key: ${{ secrets.CLOUD_KEY }}
+          known_hosts: ${{ secrets.CLOUD_KNOWN_HOSTS }}
           options: |
             -i inventory/hosts.ini
             --limit almonium

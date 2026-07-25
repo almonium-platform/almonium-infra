@@ -40,25 +40,14 @@
     - name: Validate backend image coordinate
       ansible.builtin.assert:
         that:
-          - >-
-            (deploy_image_digest | default('')) is match('^sha256:[0-9a-f]{64}$')
-            or (
-              deploy_image_digest | default('') | length == 0
-              and deploy_image_tag | default('') | length > 0
-            )
+          - (deploy_image_digest | default('')) is match('^sha256:[0-9a-f]{64}$')
         fail_msg: >-
           deploy_image_digest must have the form sha256:<64 lowercase hex
-          characters>; deploy_image_tag is accepted only for rollout
-          compatibility with the previous backend workflow
+          characters
 
     - name: Select backend image reference
       ansible.builtin.set_fact:
-        deploy_image_reference: >-
-          {{
-            'ghcr.io/almonium-platform/almonium-be@' ~ deploy_image_digest
-            if deploy_image_digest | default('') | length > 0
-            else 'ghcr.io/almonium-platform/almonium-be:' ~ deploy_image_tag
-          }}
+        deploy_image_reference: "ghcr.io/almonium-platform/almonium-be@{{ deploy_image_digest }}"
 
     - name: Select deployment config
       ansible.builtin.set_fact:
@@ -114,13 +103,67 @@
       ansible.builtin.import_role:
         name: deploy_almonium_be_slot
 
+    - name: Ensure Traefik dynamic configuration directory exists
+      ansible.builtin.file:
+        path: /home/almonium/traefik_dynamic
+        state: directory
+        mode: "0755"
+      become: true
+
+    - name: Inspect previous slot
+      community.docker.docker_container_info:
+        name: "almonium_{{ deploy_environment }}_{{ previous_slot }}"
+      register: previous_slot_info
+
+    - name: Switch public traffic and verify the selected slot
+      block:
+        - name: Point the public router at the target slot
+          ansible.builtin.template:
+            src: "{{ playbook_dir }}/roles/deploy_almonium_be_slot/templates/route.yaml.j2"
+            dest: "/home/almonium/traefik_dynamic/almonium-be-{{ deploy_environment }}.yaml"
+            mode: "0644"
+          vars:
+            route_slot: "{{ deploy_slot }}"
+          become: true
+
+        - name: Verify HTTPS routes to the target slot
+          ansible.builtin.uri:
+            url: "https://{{ app_cfg.api_hostname }}{{ almonium.shared.context_path }}/actuator/health"
+            method: GET
+            return_content: true
+            validate_certs: true
+          register: routed_health_check
+          until:
+            - routed_health_check.status == 200
+            - routed_health_check.json is defined
+            - routed_health_check.json.status == "UP"
+            - routed_health_check.x_almonium_deploy_slot | default('') == deploy_slot
+          retries: 20
+          delay: 3
+          delegate_to: localhost
+
+      rescue:
+        - name: Restore the previous public route
+          ansible.builtin.template:
+            src: "{{ playbook_dir }}/roles/deploy_almonium_be_slot/templates/route.yaml.j2"
+            dest: "/home/almonium/traefik_dynamic/almonium-be-{{ deploy_environment }}.yaml"
+            mode: "0644"
+          vars:
+            route_slot: "{{ previous_slot }}"
+          become: true
+          when: previous_slot_info.exists
+
+        - name: Fail deployment after route verification failure
+          ansible.builtin.fail:
+            msg: >-
+              HTTPS smoke test did not confirm that
+              {{ app_cfg.api_hostname }} routed to {{ deploy_slot }}.
+              The previous route was restored when an earlier slot existed.
+
     - name: Stop and remove previous slot
-      ansible.builtin.command: >-
-        docker stop almonium_{{ deploy_environment }}_{{ previous_slot }} &&
-        docker rm almonium_{{ deploy_environment }}_{{ previous_slot }}
-      register: stop_previous_result
-      changed_when: "'Error: No such container' not in stop_previous_result.stderr | default('') and stop_previous_result.rc == 0"
-      failed_when: false
+      community.docker.docker_container:
+        name: "almonium_{{ deploy_environment }}_{{ previous_slot }}"
+        state: absent
       when: previous_slot is defined and previous_slot != '' and previous_slot != deploy_slot
 
     - name: Update color file to point to next slot

@@ -61,6 +61,12 @@ repositories can invoke the same server-side conventions.
 - Encrypted `vault*.yaml` files are committed. Their matching `*.schema.yaml`
   files document the shape only and must never contain real values.
 - GitHub Actions receives SSH and vault passwords through GitHub Secrets.
+- Ansible workflows require `CLOUD_KNOWN_HOSTS`, containing the reviewed
+  OpenSSH `known_hosts` entry for each inventory host. The Traefik SSH workflow
+  requires `CLOUD_HOST_FINGERPRINT`, containing the reviewed SHA-256 host-key
+  fingerprint. Update these values through a separate trusted channel when a
+  host key is deliberately rotated; do not generate them with `ssh-keyscan`
+  inside a workflow.
 - If a schema file contains a credential-shaped value, treat it as exposed:
   revoke or rotate it at the provider, replace it in the encrypted vault, and
   remove it from Git history with the repository owners' agreed history-rewrite
