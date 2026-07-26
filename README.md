@@ -50,7 +50,9 @@ nginx-configs/          Shared frontend Nginx configuration
   Docker Compose. They do not rely on the separate sync workflow winning a race.
 - **Almonium** and **FamSub** backend/frontend playbooks are intended to be
   invoked by their application CI pipelines with an image tag and registry
-  credentials. Backend deployments use blue/green slots and a health check.
+  credentials. Backend deployments use blue/green slots and a health check. If
+  Docker on the host is managed by Snap, start it locally first with
+  `sudo snap start docker`.
 
 The GitHub workflows in this repository cover the shared stacks and personal
 services. The application deployment playbooks are kept here so application
@@ -125,16 +127,16 @@ uses the `fam_sub_prod` Vault ID:
 
 ```bash
 # Generic form
-ansible-vault edit --vault-id <vault-id>@prompt <encrypted-vault-file>
+EDITOR=nano ansible-vault edit --vault-id <vault-id>@prompt <encrypted-vault-file>
 
 # Almonium production (most commonly used)
-ansible-vault edit --vault-id almonium_prod@prompt \
+EDITOR=nano ansible-vault edit --vault-id almonium_prod@prompt \
   ansible/vars/apps/almonium/vault.prod.yaml
 
 # FamSub production
 ansible-vault view --vault-id fam_sub_prod@prompt \
   ansible/vars/apps/fam_sub/vault.prod.yaml
-ansible-vault edit --vault-id fam_sub_prod@prompt \
+EDITOR=nano ansible-vault edit --vault-id fam_sub_prod@prompt \
   ansible/vars/apps/fam_sub/vault.prod.yaml
 ```
 
@@ -157,8 +159,8 @@ configuration files.
 For example, to edit another operational vault:
 
 ```bash
-ansible-vault edit --vault-id db@prompt ansible/vars/stacks/db/vault.yaml
-ansible-vault edit --vault-id rabbitmq@prompt \
+EDITOR=nano ansible-vault edit --vault-id db@prompt ansible/vars/stacks/db/vault.yaml
+EDITOR=nano ansible-vault edit --vault-id rabbitmq@prompt \
   ansible/vars/stacks/rabbitmq/vault.yaml
 ```
 
