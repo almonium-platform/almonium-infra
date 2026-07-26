@@ -12,6 +12,13 @@ repositories, not their source-level configuration contracts:
 - `../almonium-fe` owns the Angular client, API contract consumption, and
   browser-facing environment configuration. Its CI builds the ARM64 image and
   invokes `ansible/playbook-deploy-almonium-fe.yaml`.
+- `../almonium-mobile` owns the Expo SDK 54 React Native client for iOS and
+  Android. It consumes the backend with Firebase ID-token bearer
+  authentication and is distributed through native/Expo build and release
+  tooling; it is not currently deployed as a server container by this
+  repository. Keep mobile public configuration in that repository and do not
+  place native provider secrets or mobile app credentials in infra vaults
+  unless a future release workflow explicitly requires them.
 
 For an application configuration-key change, coordinate a separate commit in
 the relevant application repository for its binding/template and a focused

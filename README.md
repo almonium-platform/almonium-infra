@@ -18,6 +18,11 @@ GitHub Actions triggers the relevant deployment playbooks.
 | Frontends and static sites | Almonium FE, FamSub FE, TG Voices |
 | Personal services | Emby and Syncthing |
 
+The Almonium workspace also includes `almonium-mobile`, an Expo/React Native
+iOS and Android client. It uses the shared Almonium API with Firebase bearer
+authentication and is distributed through Expo/EAS and native app stores; it is
+not currently a server-hosted service in this repository.
+
 Shared services are deliberately shared by projects, with separate PostgreSQL
 databases/users and RabbitMQ vhosts/users per application environment.
 
