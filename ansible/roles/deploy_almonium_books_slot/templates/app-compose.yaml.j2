@@ -35,7 +35,14 @@ services:
         - -c
         - >-
           import urllib.request;
-          urllib.request.urlopen('http://localhost:{{ books.shared.internal_port }}/healthz/', timeout=2)
+          urllib.request.urlopen(
+          urllib.request.Request(
+          'http://localhost:{{ books.shared.internal_port }}/healthz/',
+          headers={
+          'Host': '{{ app_cfg.hostname }}',
+          'X-Forwarded-Proto': 'https'
+          }),
+          timeout=2)
       interval: 10s
       timeout: 3s
       retries: 5

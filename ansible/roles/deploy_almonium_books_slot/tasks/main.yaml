@@ -92,10 +92,14 @@
   ansible.builtin.uri:
     url: "http://127.0.0.1:{{ local_healthcheck_port }}/healthz/"
     method: GET
+    headers:
+      Host: "{{ app_cfg.hostname }}"
+      X-Forwarded-Proto: "https"
     return_content: true
+    timeout: 3
   register: health_check_result
   until:
     - health_check_result.status == 200
     - health_check_result.content == "ok"
-  retries: 60
-  delay: 3
+  retries: 15
+  delay: 2
