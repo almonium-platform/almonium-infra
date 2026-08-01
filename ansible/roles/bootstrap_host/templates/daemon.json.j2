@@ -1,0 +1,8 @@
+{
+  "dns": {{ bootstrap_docker_dns | to_json }},
+  "log-driver": "local",
+  "log-opts": {
+    "max-size": "{{ bootstrap_docker_log_max_size }}",
+    "max-file": "{{ bootstrap_docker_log_max_files }}"
+  }
+}

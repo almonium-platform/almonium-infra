@@ -12,3 +12,8 @@ bootstrap_docker_networks:
   - proxy-net
   - db-net
   - broker-net
+bootstrap_docker_dns:
+  - "8.8.8.8"
+  - "1.1.1.1"
+bootstrap_docker_log_max_size: "10m"
+bootstrap_docker_log_max_files: "3"

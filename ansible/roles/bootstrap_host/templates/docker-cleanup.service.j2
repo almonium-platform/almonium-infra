@@ -1,0 +1,10 @@
+[Unit]
+Description=Remove stopped Docker containers and unreferenced Docker data
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker container prune --force --filter until=168h
+ExecStart=/usr/bin/docker image prune --all --force
+ExecStart=/usr/bin/docker builder prune --all --force

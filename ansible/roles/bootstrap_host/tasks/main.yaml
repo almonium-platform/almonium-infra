@@ -17,6 +17,19 @@
     name: docker-compose-plugin
     state: present
 
+- name: Ensure Docker configuration directory exists
+  ansible.builtin.file:
+    path: /etc/docker
+    state: directory
+    mode: "0755"
+
+- name: Configure bounded local Docker logs
+  ansible.builtin.template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+    mode: "0644"
+  notify: Restart Docker
+
 - name: Ensure Docker service is running
   ansible.builtin.systemd:
     name: docker
@@ -79,3 +92,24 @@
     internal: false
     state: present
   loop: "{{ bootstrap_docker_networks }}"
+
+- name: Install Docker cleanup service
+  ansible.builtin.template:
+    src: docker-cleanup.service.j2
+    dest: /etc/systemd/system/docker-cleanup.service
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Install Docker cleanup timer
+  ansible.builtin.template:
+    src: docker-cleanup.timer.j2
+    dest: /etc/systemd/system/docker-cleanup.timer
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Enable daily Docker cleanup timer
+  ansible.builtin.systemd:
+    name: docker-cleanup.timer
+    enabled: true
+    state: started
+    daemon_reload: true
