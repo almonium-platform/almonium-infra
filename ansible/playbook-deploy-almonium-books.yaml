@@ -1,0 +1,168 @@
+- name: Deploy Almonium Books application
+  hosts: almonium
+  gather_facts: false
+
+  vars:
+    infra_root: "/home/almonium/infra"
+    project_name_base: "almonium-books"
+
+  pre_tasks:
+    - name: Load Books app vars
+      ansible.builtin.include_vars:
+        name: books
+        file: "{{ playbook_dir }}/vars/apps/books/vars.yaml"
+
+    - name: Load Almonium shared secrets
+      ansible.builtin.include_vars:
+        name: almonium_shared
+        file: "{{ playbook_dir }}/vars/apps/almonium/vault.shared.yaml"
+
+    - name: Load production secrets
+      ansible.builtin.include_vars:
+        name: almonium_env
+        file: "{{ playbook_dir }}/vars/apps/almonium/vault.prod.yaml"
+      when: deploy_environment == "prod"
+
+    - name: Load staging secrets
+      ansible.builtin.include_vars:
+        name: almonium_env
+        file: "{{ playbook_dir }}/vars/apps/almonium/vault.staging.yaml"
+      when: deploy_environment == "staging"
+
+    - name: Validate deployment inputs
+      ansible.builtin.assert:
+        that:
+          - deploy_environment in ["prod", "staging"]
+          - (deploy_image_digest | default('')) is match('^sha256:[0-9a-f]{64}$')
+          - almonium_env.books.db.password | string | length > 0
+          - almonium_env.books.rabbitmq.password | string | length > 0
+          - almonium_env.books.django.secret_key | string | length >= 32
+          - almonium_env.books.django.admin_username | string | length > 0
+          - almonium_env.books.django.admin_password | string | length > 0
+        fail_msg: "Books deployment inputs or environment vault values are incomplete."
+
+    - name: Select deployment configuration
+      ansible.builtin.set_fact:
+        app_cfg: "{{ books.deployments[deploy_environment] }}"
+        deploy_image_reference: >-
+          ghcr.io/almonium-platform/almonium-book-processor@{{ deploy_image_digest }}
+
+  tasks:
+    - name: Set deployment paths
+      ansible.builtin.set_fact:
+        color_file_path: "{{ infra_root }}/.next_color_books_{{ deploy_environment }}"
+        docker_compose_project_name: "{{ project_name_base }}_{{ deploy_environment }}"
+
+    - name: Read next deployment slot
+      ansible.builtin.slurp:
+        src: "{{ color_file_path }}"
+      register: color_file_content
+      failed_when: false
+
+    - name: Select target and previous slots
+      ansible.builtin.set_fact:
+        deploy_slot: >-
+          {{ 'green' if
+             (color_file_content.content | default('') | b64decode) == 'green'
+             else 'blue' }}
+
+    - name: Select previous slot
+      ansible.builtin.set_fact:
+        previous_slot: "{{ 'green' if deploy_slot == 'blue' else 'blue' }}"
+
+    - name: Select local health port
+      ansible.builtin.set_fact:
+        local_healthcheck_port: >-
+          {%- if deploy_environment == 'staging' -%}
+            {{- '9958' if deploy_slot == 'blue' else '9959' -}}
+          {%- else -%}
+            {{- '9968' if deploy_slot == 'blue' else '9969' -}}
+          {%- endif -%}
+
+    - name: Log in to GitHub Container Registry
+      community.docker.docker_login:
+        registry: ghcr.io
+        username: "{{ deploy_gh_actor }}"
+        password: "{{ deploy_gh_token }}"
+
+    - name: Deploy target slot
+      ansible.builtin.import_role:
+        name: deploy_almonium_books_slot
+
+    - name: Ensure Traefik dynamic configuration directory exists
+      ansible.builtin.file:
+        path: /home/almonium/traefik_dynamic
+        state: directory
+        mode: "0755"
+      become: true
+
+    - name: Inspect previous web slot
+      community.docker.docker_container_info:
+        name: "almonium_books_{{ deploy_environment }}_{{ previous_slot }}"
+      register: previous_slot_info
+
+    - name: Switch and verify public traffic
+      block:
+        - name: Point public router at target slot
+          ansible.builtin.template:
+            src: "{{ playbook_dir }}/roles/deploy_almonium_books_slot/templates/route.yaml.j2"
+            dest: "/home/almonium/traefik_dynamic/almonium-books-{{ deploy_environment }}.yaml"
+            mode: "0644"
+          vars:
+            route_slot: "{{ deploy_slot }}"
+          become: true
+
+        - name: Verify routed HTTPS health
+          ansible.builtin.uri:
+            url: "https://{{ app_cfg.hostname }}/healthz/"
+            method: GET
+            return_content: true
+            validate_certs: true
+          register: routed_health_check
+          until:
+            - routed_health_check.status == 200
+            - routed_health_check.content == "ok"
+            - routed_health_check.x_almonium_deploy_slot | default('') == deploy_slot
+          retries: 20
+          delay: 3
+          delegate_to: localhost
+
+      rescue:
+        - name: Restore previous route
+          ansible.builtin.template:
+            src: "{{ playbook_dir }}/roles/deploy_almonium_books_slot/templates/route.yaml.j2"
+            dest: "/home/almonium/traefik_dynamic/almonium-books-{{ deploy_environment }}.yaml"
+            mode: "0644"
+          vars:
+            route_slot: "{{ previous_slot }}"
+          become: true
+          when: previous_slot_info.exists
+
+        - name: Fail after route verification failure
+          ansible.builtin.fail:
+            msg: "Books HTTPS health did not confirm the target slot; prior routing was restored."
+
+    - name: Remove previous web container
+      community.docker.docker_container:
+        name: "almonium_books_{{ deploy_environment }}_{{ previous_slot }}"
+        state: absent
+      when: previous_slot != deploy_slot
+
+    - name: Remove previous worker container
+      community.docker.docker_container:
+        name: "almonium_books_worker_{{ deploy_environment }}_{{ previous_slot }}"
+        state: absent
+      when: previous_slot != deploy_slot
+
+    - name: Record next deployment slot
+      ansible.builtin.copy:
+        content: "{{ 'green' if deploy_slot == 'blue' else 'blue' }}"
+        dest: "{{ color_file_path }}"
+        mode: "0644"
+      become: true
+
+    - name: Deployment summary
+      ansible.builtin.debug:
+        msg: >-
+          Almonium Books {{ deploy_environment }} switched to {{ deploy_slot }}
+          at {{ app_cfg.hostname }}.

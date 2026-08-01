@@ -1,0 +1,25 @@
+http:
+  routers:
+    almonium-books-{{ deploy_environment }}:
+      rule: "Host(`{{ app_cfg.hostname }}`)"
+      priority: 1000
+      entryPoints:
+        - websecure
+      service: almonium-books-{{ deploy_environment }}
+      middlewares:
+        - almonium-books-{{ deploy_environment }}-slot
+      tls:
+        certResolver: porkbun
+
+  services:
+    almonium-books-{{ deploy_environment }}:
+      loadBalancer:
+        servers:
+          - url: >-
+              http://almonium_books_{{ deploy_environment }}_{{ route_slot }}:{{ books.shared.internal_port }}
+
+  middlewares:
+    almonium-books-{{ deploy_environment }}-slot:
+      headers:
+        customResponseHeaders:
+          X-Almonium-Deploy-Slot: "{{ route_slot }}"

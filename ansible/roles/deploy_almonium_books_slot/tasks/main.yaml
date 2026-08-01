@@ -1,0 +1,99 @@
+- name: Ensure deployment and media directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    mode: "{{ item.mode }}"
+    owner: "{{ item.owner | default(omit) }}"
+    group: "{{ item.group | default(omit) }}"
+  loop:
+    - path: "/home/almonium/deploy_slots/{{ docker_compose_project_name }}/{{ deploy_slot }}"
+      mode: "0755"
+    - path: "{{ app_cfg.media_root }}"
+      mode: "0750"
+      owner: "10001"
+      group: "10001"
+    - path: "{{ app_cfg.model_cache_root }}"
+      mode: "0750"
+      owner: "10001"
+      group: "10001"
+  become: true
+
+- name: Render Books Compose file
+  ansible.builtin.template:
+    src: app-compose.yaml.j2
+    dest: >-
+      /home/almonium/deploy_slots/{{ docker_compose_project_name }}/{{ deploy_slot }}/docker-compose.yaml
+    mode: "0600"
+  become: true
+
+- name: Pull immutable application image
+  community.docker.docker_image:
+    name: "{{ deploy_image_reference }}"
+    source: pull
+  register: pull_result
+  retries: 3
+  delay: 10
+  until: pull_result is succeeded
+
+- name: Apply Django migrations
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - --project-name
+      - "{{ docker_compose_project_name }}_{{ deploy_slot }}"
+      - run
+      - --rm
+      - app
+      - python
+      - manage.py
+      - migrate
+      - --noinput
+  args:
+    chdir: "/home/almonium/deploy_slots/{{ docker_compose_project_name }}/{{ deploy_slot }}"
+  register: migration_result
+  changed_when: "'No migrations to apply' not in migration_result.stdout"
+
+- name: Ensure initial staff account exists
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - --project-name
+      - "{{ docker_compose_project_name }}_{{ deploy_slot }}"
+      - run
+      - --rm
+      - app
+      - python
+      - manage.py
+      - createsuperuser
+      - --noinput
+  args:
+    chdir: "/home/almonium/deploy_slots/{{ docker_compose_project_name }}/{{ deploy_slot }}"
+  register: superuser_result
+  changed_when: superuser_result.rc == 0
+  failed_when:
+    - superuser_result.rc != 0
+    - "'already taken' not in superuser_result.stderr"
+  no_log: true
+
+- name: Start web and worker services
+  community.docker.docker_compose_v2:
+    project_src: "/home/almonium/deploy_slots/{{ docker_compose_project_name }}/{{ deploy_slot }}"
+    project_name: "{{ docker_compose_project_name }}_{{ deploy_slot }}"
+    state: present
+    remove_orphans: true
+    pull: never
+    recreate: always
+
+- name: Wait for target slot health
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ local_healthcheck_port }}/healthz/"
+    method: GET
+    return_content: true
+  register: health_check_result
+  until:
+    - health_check_result.status == 200
+    - health_check_result.content == "ok"
+  retries: 60
+  delay: 3

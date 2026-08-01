@@ -31,3 +31,17 @@ postgres_app_tenants:
     db_user: "fam_sub_user"
     db_schema: "public"
     backup: true
+
+  - app_id: "almonium_books"
+    environment: "prod"
+    db_name: "almonium_books"
+    db_user: "almonium_books_prod"
+    db_schema: "public"
+    backup: true
+
+  - app_id: "almonium_books"
+    environment: "staging"
+    db_name: "almonium_books_staging"
+    db_user: "almonium_books_staging"
+    db_schema: "public"
+    backup: false

@@ -1,0 +1,26 @@
+shared:
+  internal_port: "8000"
+  embedding_model: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+
+deployments:
+  prod:
+    hostname: "books.almonium.com"
+    media_root: "/home/almonium/books/prod/media"
+    model_cache_root: "/home/almonium/books/prod/models"
+    db:
+      name: "almonium_books"
+      username: "almonium_books_prod"
+    rabbitmq:
+      username: "almonium_books_prod"
+      vhost: "/almonium_books_prod"
+
+  staging:
+    hostname: "staging.books.almonium.com"
+    media_root: "/home/almonium/books/staging/media"
+    model_cache_root: "/home/almonium/books/staging/models"
+    db:
+      name: "almonium_books_staging"
+      username: "almonium_books_staging"
+    rabbitmq:
+      username: "almonium_books_staging"
+      vhost: "/almonium_books_staging"

@@ -41,6 +41,11 @@
     name: almonium_staging
     file: "{{ playbook_dir }}/vars/apps/almonium/vault.staging.yaml"
 
+- name: Load Almonium Books app vars
+  ansible.builtin.include_vars:
+    name: books
+    file: "{{ playbook_dir }}/vars/apps/books/vars.yaml"
+
 - name: Validate RabbitMQ admin vars
   assert:
     that:
@@ -60,6 +65,14 @@
       - almonium.deployments.staging.rabbitmq.vhost is defined
       - almonium_staging.rabbitmq.password is defined
       - almonium_staging.rabbitmq.password | string | length > 0
+      - books.deployments.prod.rabbitmq.username is defined
+      - books.deployments.prod.rabbitmq.vhost is defined
+      - almonium_prod.books.rabbitmq.password is defined
+      - almonium_prod.books.rabbitmq.password | string | length > 0
+      - books.deployments.staging.rabbitmq.username is defined
+      - books.deployments.staging.rabbitmq.vhost is defined
+      - almonium_staging.books.rabbitmq.password is defined
+      - almonium_staging.books.rabbitmq.password | string | length > 0
     fail_msg: "Missing Almonium RabbitMQ deployment vars or secrets."
 
 - name: Ensure broker-net exists
@@ -100,6 +113,8 @@
   loop:
     - vhost: "{{ almonium.deployments.prod.rabbitmq.vhost }}"
     - vhost: "{{ almonium.deployments.staging.rabbitmq.vhost }}"
+    - vhost: "{{ books.deployments.prod.rabbitmq.vhost }}"
+    - vhost: "{{ books.deployments.staging.rabbitmq.vhost }}"
   loop_control:
     label: "{{ item.vhost }}"
 
@@ -116,6 +131,10 @@
       password: "{{ almonium_prod.rabbitmq.password }}"
     - username: "{{ almonium.deployments.staging.rabbitmq.username }}"
       password: "{{ almonium_staging.rabbitmq.password }}"
+    - username: "{{ books.deployments.prod.rabbitmq.username }}"
+      password: "{{ almonium_prod.books.rabbitmq.password }}"
+    - username: "{{ books.deployments.staging.rabbitmq.username }}"
+      password: "{{ almonium_staging.books.rabbitmq.password }}"
   loop_control:
     label: "{{ item.username }}"
 
@@ -127,5 +146,9 @@
       vhost: "{{ almonium.deployments.prod.rabbitmq.vhost }}"
     - username: "{{ almonium.deployments.staging.rabbitmq.username }}"
       vhost: "{{ almonium.deployments.staging.rabbitmq.vhost }}"
+    - username: "{{ books.deployments.prod.rabbitmq.username }}"
+      vhost: "{{ books.deployments.prod.rabbitmq.vhost }}"
+    - username: "{{ books.deployments.staging.rabbitmq.username }}"
+      vhost: "{{ books.deployments.staging.rabbitmq.vhost }}"
   loop_control:
     label: "{{ item.username }} -> {{ item.vhost }}"

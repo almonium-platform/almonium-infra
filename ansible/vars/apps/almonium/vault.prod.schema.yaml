@@ -14,3 +14,14 @@ stripe:
 
 rabbitmq:
   password: ""
+
+books:
+  db:
+    password: ""
+  rabbitmq:
+    password: ""
+  django:
+    secret_key: ""
+    admin_username: ""
+    admin_email: ""
+    admin_password: ""

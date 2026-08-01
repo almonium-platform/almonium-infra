@@ -14,7 +14,7 @@ GitHub Actions triggers the relevant deployment playbooks.
 | --- | --- |
 | Edge | Traefik, HTTPS certificates via Porkbun DNS-01 |
 | Shared application services | PostgreSQL with PgBouncer, RabbitMQ |
-| Applications | Almonium (prod and staging), FamSub |
+| Applications | Almonium (prod and staging), Almonium Books (prod and staging), FamSub |
 | Frontends and static sites | Almonium FE, FamSub FE, TG Voices |
 | Personal services | Emby and Syncthing |
 
@@ -86,7 +86,15 @@ repositories can invoke the same server-side conventions.
   ```
 
 - Persistent data is outside disposable containers: PostgreSQL backups live in
-  `/opt/db/backups`; Emby and media data live on host-mounted paths.
+  `/opt/db/backups`; Almonium Books uploads live under
+  `/home/almonium/books/<environment>/media`; Emby and media data live on
+  host-mounted paths.
+
+Almonium Books uses the existing PostgreSQL and RabbitMQ containers, with a
+separate logical database/user and vhost/user for each environment. Production
+contains the catalogue and is backed up. Staging is intentionally disposable,
+is not backed up, and should contain only the sample editions required for
+migration and processing experiments.
 
 ## PostgreSQL backups
 

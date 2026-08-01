@@ -1,0 +1,69 @@
+x-books-environment: &books-environment
+  DEBUG: "false"
+  SECRET_KEY: {{ almonium_env.books.django.secret_key | to_json }}
+  ALLOWED_HOSTS: {{ app_cfg.hostname | to_json }}
+  CSRF_TRUSTED_ORIGINS: {{ ('https://' ~ app_cfg.hostname) | to_json }}
+  SECURE_SSL_REDIRECT: "true"
+  DATABASE_URL: {{ ('postgresql://' ~ app_cfg.db.username ~ ':' ~ (almonium_env.books.db.password | urlencode) ~ '@' ~ platform.db.host ~ ':' ~ platform.db.port ~ '/' ~ app_cfg.db.name) | to_json }}
+  CELERY_BROKER_URL: {{ ('amqp://' ~ app_cfg.rabbitmq.username ~ ':' ~ (almonium_env.books.rabbitmq.password | urlencode) ~ '@' ~ platform.rabbitmq.host ~ ':' ~ platform.rabbitmq.port ~ '/' ~ (app_cfg.rabbitmq.vhost | urlencode)) | to_json }}
+  MEDIA_ROOT: "/app/media"
+  NLP_EMBEDDING_MODEL: {{ books.shared.embedding_model | to_json }}
+  HF_HOME: "/app/models"
+  OPENAI_API_KEY: {{ almonium_shared.openai_key | default('') | to_json }}
+  DJANGO_SUPERUSER_USERNAME: {{ almonium_env.books.django.admin_username | to_json }}
+  DJANGO_SUPERUSER_EMAIL: {{ almonium_env.books.django.admin_email | to_json }}
+  DJANGO_SUPERUSER_PASSWORD: {{ almonium_env.books.django.admin_password | to_json }}
+
+services:
+  app:
+    image: "{{ deploy_image_reference }}"
+    container_name: "almonium_books_{{ deploy_environment }}_{{ deploy_slot }}"
+    environment: *books-environment
+    ports:
+      - "127.0.0.1:{{ local_healthcheck_port }}:{{ books.shared.internal_port }}"
+    volumes:
+      - "{{ app_cfg.media_root }}:/app/media"
+      - "{{ app_cfg.model_cache_root }}:/app/models"
+    networks:
+      - proxy-net
+      - broker-net
+      - db-net
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen('http://localhost:{{ books.shared.internal_port }}/healthz/', timeout=2)
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  worker:
+    image: "{{ deploy_image_reference }}"
+    container_name: "almonium_books_worker_{{ deploy_environment }}_{{ deploy_slot }}"
+    command:
+      - celery
+      - -A
+      - almonium_book_processor.config
+      - worker
+      - --loglevel=INFO
+      - --concurrency=1
+    environment: *books-environment
+    volumes:
+      - "{{ app_cfg.media_root }}:/app/media"
+      - "{{ app_cfg.model_cache_root }}:/app/models"
+    networks:
+      - broker-net
+      - db-net
+    restart: unless-stopped
+
+networks:
+  proxy-net:
+    external: true
+  broker-net:
+    external: true
+  db-net:
+    external: true
