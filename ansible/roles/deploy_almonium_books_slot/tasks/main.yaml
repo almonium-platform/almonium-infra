@@ -23,6 +23,8 @@
     src: app-compose.yaml.j2
     dest: >-
       /home/almonium/deploy_slots/{{ docker_compose_project_name }}/{{ deploy_slot }}/docker-compose.yaml
+    owner: almonium
+    group: almonium
     mode: "0600"
   become: true
 
