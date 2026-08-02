@@ -15,6 +15,7 @@ deployments:
     api_hostname: "api.almonium.com"
     deploy_environment: "prod"
     spring_profile: "prod"
+    books_processor_url: "https://books.almonium.com/api/v1"
 
     db:
       name: "almonium"
@@ -29,6 +30,7 @@ deployments:
     api_hostname: "staging.api.almonium.com"
     deploy_environment: "staging"
     spring_profile: "staging"
+    books_processor_url: "https://staging.books.almonium.com/api/v1"
 
     db:
       name: "almonium_staging"

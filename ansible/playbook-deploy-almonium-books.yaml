@@ -39,6 +39,7 @@
           - almonium_env.books.django.secret_key | string | length >= 32
           - almonium_env.books.django.admin_username | string | length > 0
           - almonium_env.books.django.admin_password | string | length > 0
+          - almonium_shared.books.publisher_secret | string | length >= 32
         fail_msg: "Books deployment inputs or environment vault values are incomplete."
 
     - name: Select deployment configuration

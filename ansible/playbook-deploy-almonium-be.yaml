@@ -53,6 +53,12 @@
       ansible.builtin.set_fact:
         app_cfg: "{{ almonium.deployments[deploy_environment] }}"
 
+    - name: Validate Books publication secret
+      ansible.builtin.assert:
+        that:
+          - almonium_shared.books.publisher_secret | string | length >= 32
+        fail_msg: "Almonium Books publication secret is incomplete."
+
   tasks:
     - name: Determine project name suffix and color file path
       ansible.builtin.set_fact:

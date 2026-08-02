@@ -5,6 +5,7 @@ shared:
 deployments:
   prod:
     hostname: "books.almonium.com"
+    almonium_api_url: "https://api.almonium.com/api/v1"
     media_root: "/home/almonium/books/prod/media"
     model_cache_root: "/home/almonium/books/prod/models"
     db:
@@ -16,6 +17,7 @@ deployments:
 
   staging:
     hostname: "staging.books.almonium.com"
+    almonium_api_url: "https://staging.api.almonium.com/api/v1"
     media_root: "/home/almonium/books/staging/media"
     model_cache_root: "/home/almonium/books/staging/models"
     db:

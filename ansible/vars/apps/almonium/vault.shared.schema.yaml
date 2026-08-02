@@ -9,3 +9,5 @@ rapid_api_key: ""
 wordnik_key: ""
 yandex_key: ""
 zepto_api_key: ""
+books:
+  publisher_secret: ""

@@ -36,6 +36,8 @@ services:
       GOOGLE_PROJECT_ID: "{{ almonium.shared.google_project_id }}"
       GOOGLE_SERVICE_ACCOUNT_KEY_BASE64: "{{ almonium_shared.google_service_account_key_base64 }}"
       FIREBASE_STORAGE_BUCKET: "{{ almonium.shared.firebase_storage_bucket }}"
+      ALMONIUM_BOOKS_PUBLISHER_SECRET: "{{ almonium_shared.books.publisher_secret }}"
+      ALMONIUM_BOOKS_PROCESSOR_URL: "{{ app_cfg.books_processor_url }}"
 
     ports:
       - "127.0.0.1:{{ local_healthcheck_port }}:{{ app_internal_port }}"

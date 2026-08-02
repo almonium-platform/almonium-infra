@@ -10,6 +10,8 @@ x-books-environment: &books-environment
   NLP_EMBEDDING_MODEL: {{ books.shared.embedding_model | to_json }}
   HF_HOME: "/app/models"
   OPENAI_API_KEY: {{ almonium_shared.openai_key | default('') | to_json }}
+  ALMONIUM_API_URL: {{ app_cfg.almonium_api_url | to_json }}
+  ALMONIUM_BOOKS_PUBLISHER_TOKEN: {{ almonium_shared.books.publisher_secret | to_json }}
   DJANGO_SUPERUSER_USERNAME: {{ almonium_env.books.django.admin_username | to_json }}
   DJANGO_SUPERUSER_EMAIL: {{ almonium_env.books.django.admin_email | to_json }}
   DJANGO_SUPERUSER_PASSWORD: {{ almonium_env.books.django.admin_password | to_json }}
