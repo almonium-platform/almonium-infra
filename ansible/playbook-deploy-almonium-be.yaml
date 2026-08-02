@@ -59,6 +59,19 @@
           - almonium_shared.books.publisher_secret | string | length >= 32
         fail_msg: "Almonium Books publication secret is incomplete."
 
+    - name: Validate Paddle Billing configuration
+      ansible.builtin.assert:
+        that:
+          - app_cfg.paddle_environment in ["SANDBOX", "LIVE"]
+          - almonium_env.paddle.api_key | string | length > 0
+          - almonium_env.paddle.client_token | string | length > 0
+          - almonium_env.paddle.webhook_secret | string | length > 0
+          - almonium_env.paddle.prices.premium_monthly is match('^pri_[a-z0-9]+$')
+          - almonium_env.paddle.prices.premium_annual is match('^pri_[a-z0-9]+$')
+          - almonium_env.paddle.prices.founder_monthly is match('^pri_[a-z0-9]+$')
+          - almonium_env.paddle.prices.founder_annual is match('^pri_[a-z0-9]+$')
+        fail_msg: "Paddle Billing credentials or price IDs are incomplete."
+
   tasks:
     - name: Determine project name suffix and color file path
       ansible.builtin.set_fact:

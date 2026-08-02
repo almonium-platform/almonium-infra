@@ -25,8 +25,14 @@ services:
       STREAM_KEY: "{{ almonium_env.stream.key }}"
       STREAM_SECRET: "{{ almonium_env.stream.secret }}"
 
-      STRIPE_KEY: "{{ almonium_env.stripe.key }}"
-      STRIPE_WEBHOOK_SECRET: "{{ almonium_env.stripe.webhook_secret }}"
+      PADDLE_ENVIRONMENT: {{ app_cfg.paddle_environment | to_json }}
+      PADDLE_API_KEY: {{ almonium_env.paddle.api_key | to_json }}
+      PADDLE_CLIENT_TOKEN: {{ almonium_env.paddle.client_token | to_json }}
+      PADDLE_WEBHOOK_SECRET: {{ almonium_env.paddle.webhook_secret | to_json }}
+      PADDLE_PRICE_PREMIUM_MONTHLY: {{ almonium_env.paddle.prices.premium_monthly | to_json }}
+      PADDLE_PRICE_PREMIUM_ANNUAL: {{ almonium_env.paddle.prices.premium_annual | to_json }}
+      PADDLE_PRICE_FOUNDER_MONTHLY: {{ almonium_env.paddle.prices.founder_monthly | to_json }}
+      PADDLE_PRICE_FOUNDER_ANNUAL: {{ almonium_env.paddle.prices.founder_annual | to_json }}
 
       RAPID_API_KEY: "{{ almonium_shared.rapid_api_key }}"
       WORDNIK_KEY: "{{ almonium_shared.wordnik_key }}"

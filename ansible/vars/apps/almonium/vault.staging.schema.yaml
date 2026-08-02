@@ -8,9 +8,15 @@ stream:
   key: ""
   secret: ""
 
-stripe:
-  key: ""
+paddle:
+  api_key: ""
+  client_token: ""
   webhook_secret: ""
+  prices:
+    premium_monthly: ""
+    premium_annual: ""
+    founder_monthly: ""
+    founder_annual: ""
 
 rabbitmq:
   password: ""

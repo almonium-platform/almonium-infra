@@ -15,6 +15,7 @@ deployments:
     api_hostname: "api.almonium.com"
     deploy_environment: "prod"
     spring_profile: "prod"
+    paddle_environment: "LIVE"
     books_processor_url: "https://books.almonium.com/api/v1"
 
     db:
@@ -30,6 +31,7 @@ deployments:
     api_hostname: "staging.api.almonium.com"
     deploy_environment: "staging"
     spring_profile: "staging"
+    paddle_environment: "SANDBOX"
     books_processor_url: "https://staging.books.almonium.com/api/v1"
 
     db:
