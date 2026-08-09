@@ -146,6 +146,10 @@ EDITOR=nano ansible-vault edit --vault-id <vault-id>@prompt <encrypted-vault-fil
 EDITOR=nano ansible-vault edit --vault-id almonium_prod@prompt \
   ansible/vars/apps/almonium/vault.prod.yaml
 
+# Almonium staging
+EDITOR=nano ansible-vault edit --vault-id almonium_staging@prompt \
+  ansible/vars/apps/almonium/vault.staging.yaml
+
 # FamSub production
 ansible-vault view --vault-id fam_sub_prod@prompt \
   ansible/vars/apps/fam_sub/vault.prod.yaml
