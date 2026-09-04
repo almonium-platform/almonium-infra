@@ -1,7 +1,5 @@
 apple_client_secret: ""
 facebook_client_secret: ""
-google_client_secret: ""
-google_service_account_key_base64: ""
 mail_password: ""
 openai_key: ""
 gemini_api_key: ""
