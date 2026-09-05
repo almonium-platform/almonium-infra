@@ -25,6 +25,9 @@ services:
       STREAM_KEY: "{{ almonium_env.stream.key }}"
       STREAM_SECRET: "{{ almonium_env.stream.secret }}"
 
+      # Chat with Almo: the same shared key the books slot already uses. Empty boots the API without a model.
+      OPENAI_API_KEY: {{ almonium_shared.openai_key | default('') | to_json }}
+
       PADDLE_ENVIRONMENT: {{ app_cfg.paddle_environment | to_json }}
       PADDLE_API_KEY: {{ almonium_env.paddle.api_key | to_json }}
       PADDLE_CLIENT_TOKEN: {{ almonium_env.paddle.client_token | to_json }}
