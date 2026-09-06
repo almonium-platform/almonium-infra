@@ -150,6 +150,10 @@ EDITOR=nano ansible-vault edit --vault-id almonium_prod@prompt \
 EDITOR=nano ansible-vault edit --vault-id almonium_staging@prompt \
   ansible/vars/apps/almonium/vault.staging.yaml
 
+# Almonium shared
+EDITOR=nano ansible-vault edit --vault-id almonium_shared@prompt \
+  ansible/vars/apps/almonium/vault.shared.yaml
+
 # FamSub production
 ansible-vault view --vault-id fam_sub_prod@prompt \
   ansible/vars/apps/fam_sub/vault.prod.yaml
