@@ -3,9 +3,6 @@ db:
 
 google_service_account_key_base64: ""
 
-jwt:
-  secret: ""
-
 stream:
   key: ""
   secret: ""
