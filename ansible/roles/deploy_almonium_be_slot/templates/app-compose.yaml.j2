@@ -27,6 +27,8 @@ services:
 
       # Chat with Almo: the same shared key the books slot already uses.
       OPENAI_API_KEY: {{ almonium_shared.openai_key | to_json }}
+      # The ops spend page reads the organisation's bill; that takes an Admin API key, not a project key.
+      OPENAI_ADMIN_KEY: {{ almonium_shared.openai_admin_key | to_json }}
 
       PADDLE_ENVIRONMENT: {{ app_cfg.paddle_environment | to_json }}
       PADDLE_API_KEY: {{ almonium_env.paddle.api_key | to_json }}
