@@ -6,3 +6,7 @@ yandex_key: ""
 zepto_api_key: ""
 books:
   publisher_secret: ""
+  # What each Books environment accepts from a source that promotes editions to it.
+  promotion_secrets:
+    staging: ""
+    prod: ""

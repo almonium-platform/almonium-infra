@@ -6,6 +6,8 @@ deployments:
   prod:
     hostname: "books.almonium.com"
     almonium_api_url: "https://api.almonium.com/api/v1"
+    # Production is the end of the line: nothing is promoted out of it.
+    promotion_targets: []
     media_root: "/home/almonium/books/prod/media"
     model_cache_root: "/home/almonium/books/prod/models"
     db:
@@ -18,6 +20,8 @@ deployments:
   staging:
     hostname: "staging.books.almonium.com"
     almonium_api_url: "https://staging.api.almonium.com/api/v1"
+    # Reviewed editions reach production only through staging.
+    promotion_targets: ["prod"]
     media_root: "/home/almonium/books/staging/media"
     model_cache_root: "/home/almonium/books/staging/models"
     db:

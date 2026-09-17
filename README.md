@@ -96,6 +96,13 @@ contains the catalogue and is backed up. Staging is intentionally disposable,
 is not backed up, and should contain only the sample editions required for
 migration and processing experiments.
 
+Reviewed editions reach staging and production by promotion from another Books
+environment, never by reprocessing. Each environment accepts the promotion
+secret under `books.promotion_secrets.<environment>` in the shared Almonium
+vault; `promotion_targets` in `ansible/vars/apps/books/vars.yaml` says where an
+environment may push (staging to production, production nowhere). A laptop
+that promotes to staging carries staging's secret in its local `.env`.
+
 ## PostgreSQL backups
 
 The database role creates fresh custom-format dumps for every tenant marked

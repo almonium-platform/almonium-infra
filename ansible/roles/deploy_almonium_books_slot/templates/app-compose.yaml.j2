@@ -12,6 +12,16 @@ x-books-environment: &books-environment
   OPENAI_API_KEY: {{ almonium_shared.openai_key | default('') | to_json }}
   ALMONIUM_API_URL: {{ app_cfg.almonium_api_url | to_json }}
   ALMONIUM_BOOKS_PUBLISHER_TOKEN: {{ almonium_shared.books.publisher_secret | to_json }}
+  # Edition promotion: what this environment accepts, and where it may push.
+  ALMONIUM_BOOKS_PROMOTION_TOKEN: {{ almonium_shared.books.promotion_secrets[deploy_environment] | to_json }}
+{% set promotion_targets = [] %}
+{% for target in app_cfg.promotion_targets %}
+{% set _ = promotion_targets.append(target ~ '=https://' ~ books.deployments[target].hostname) %}
+{% endfor %}
+  ALMONIUM_BOOKS_PROMOTION_TARGETS: {{ promotion_targets | join(',') | to_json }}
+{% for target in app_cfg.promotion_targets %}
+  ALMONIUM_BOOKS_PROMOTION_TOKEN_{{ target | upper }}: {{ almonium_shared.books.promotion_secrets[target] | to_json }}
+{% endfor %}
   DJANGO_SUPERUSER_USERNAME: {{ almonium_env.books.django.admin_username | to_json }}
   DJANGO_SUPERUSER_EMAIL: {{ almonium_env.books.django.admin_email | to_json }}
   DJANGO_SUPERUSER_PASSWORD: {{ almonium_env.books.django.admin_password | to_json }}
