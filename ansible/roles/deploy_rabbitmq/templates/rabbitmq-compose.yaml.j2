@@ -5,6 +5,11 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: "{{ rabbitmq_admin_user }}"
       RABBITMQ_DEFAULT_PASS: "{{ rabbitmq_admin_password }}"
+      # The book processor's whole-book audits and adaptations hold one
+      # delivery for hours (Celery acks late); the broker's default 30-minute
+      # acknowledgement timeout would kill the worker mid-task. Six hours
+      # covers the longest job it runs.
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit consumer_timeout 21600000"
     ports:
       # Applications use broker-net directly. Keep administration available
       # through an SSH tunnel, without exposing RabbitMQ to the Internet.
