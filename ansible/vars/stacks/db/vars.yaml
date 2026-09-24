@@ -8,7 +8,7 @@ db_backup_defaults:
   retention:
     keep_daily: 7
     keep_weekly: 4
-    keep_monthly: 12
+    keep_monthly: 3
 
 postgres_app_tenants:
   - app_id: "almonium"

@@ -113,7 +113,10 @@ the bucket, schedule, and retention policy are in
 
 The `db-backup.timer` runs daily at 03:15 server time with up to ten minutes of
 random delay. It keeps seven local dumps per database and retains seven daily,
-four weekly, and twelve monthly remote snapshots.
+four weekly, and three monthly remote snapshots. Three months is a promise, not
+a default: the public account-deletion page and the Privacy Policy tell users a
+deleted account leaves the backups within 90 days. With three monthly
+snapshots it is gone from all of them within about 62 days. Raising `keep_monthly` means changing those pages first.
 
 To inspect or force a backup on the DB host:
 
