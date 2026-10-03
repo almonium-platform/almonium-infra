@@ -3,8 +3,6 @@ shared:
   debug_port: "5005"
   context_path: "/api/v1"
 
-  google_project_id: "linguatool"
-
 deployments:
   prod:
     api_hostname: "api.almonium.com"
