@@ -20,6 +20,11 @@ services:
 
       ZEPTO_API_KEY: "{{ fam_sub_env.zepto_api_key }}"
 
+      # Optional: blank turns off bank sync and the pay page QR code, so a
+      # deploy works before the vault has them.
+      MONO_API_TOKEN: "{{ fam_sub_env.mono_api_token | default('') }}"
+      PAYMENT_RECIPIENT_TAX_ID: "{{ fam_sub_env.payment_recipient_tax_id | default('') }}"
+
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy-net"

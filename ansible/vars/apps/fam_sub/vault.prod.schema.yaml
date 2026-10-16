@@ -3,3 +3,5 @@ db:
 
 google_client_secret: ""
 zepto_api_key: ""
+mono_api_token: ""
+payment_recipient_tax_id: ""
