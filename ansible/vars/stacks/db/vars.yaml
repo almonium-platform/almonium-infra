@@ -45,3 +45,25 @@ postgres_app_tenants:
     db_user: "almonium_books_staging"
     db_schema: "public"
     backup: false
+
+# Read-only roles into one schema of another tenant's database. The Books
+# processor resolves lexeme and sense ids in bulk against the backend's
+# `lexicon` schema at ingest; it may read that schema and nothing else. These
+# are not tenants: no database of their own, no ownership, no backup. The
+# schema is created here, owned by the tenant whose Liquibase run fills it, so
+# the grants hold before the backend's first migration. The password lives in
+# the DB vault under postgres_reader_passwords["<reader_id>:<environment>"].
+postgres_reader_grants:
+  - reader_id: "almonium_books_lexicon"
+    environment: "prod"
+    reader_role: "almonium_books_lexicon_prod"
+    db_name: "almonium"
+    db_schema: "lexicon"
+    schema_owner: "almonium_prod"
+
+  - reader_id: "almonium_books_lexicon"
+    environment: "staging"
+    reader_role: "almonium_books_lexicon_staging"
+    db_name: "almonium_staging"
+    db_schema: "lexicon"
+    schema_owner: "almonium_staging"

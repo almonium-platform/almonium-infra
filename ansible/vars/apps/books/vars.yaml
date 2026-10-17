@@ -13,6 +13,11 @@ deployments:
     db:
       name: "almonium_books"
       username: "almonium_books_prod"
+    # The backend's database of the same environment, read through the reader
+    # role the DB stack creates (postgres_reader_grants); only its lexicon schema.
+    lexicon_db:
+      name: "almonium"
+      username: "almonium_books_lexicon_prod"
     rabbitmq:
       username: "almonium_books_prod"
       vhost: "/almonium_books_prod"
@@ -27,6 +32,9 @@ deployments:
     db:
       name: "almonium_books_staging"
       username: "almonium_books_staging"
+    lexicon_db:
+      name: "almonium_staging"
+      username: "almonium_books_lexicon_staging"
     rabbitmq:
       username: "almonium_books_staging"
       vhost: "/almonium_books_staging"

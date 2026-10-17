@@ -5,6 +5,8 @@ x-books-environment: &books-environment
   CSRF_TRUSTED_ORIGINS: {{ ('https://' ~ app_cfg.hostname) | to_json }}
   SECURE_SSL_REDIRECT: "true"
   DATABASE_URL: {{ ('postgresql://' ~ app_cfg.db.username ~ ':' ~ (almonium_env.books.db.password | urlencode) ~ '@' ~ platform.db.host ~ ':' ~ platform.db.port ~ '/' ~ app_cfg.db.name) | to_json }}
+  # The backend's lexicon schema, through a role that may only read it.
+  LEXICON_DATABASE_URL: {{ ('postgresql://' ~ app_cfg.lexicon_db.username ~ ':' ~ (almonium_env.books.lexicon_db.password | urlencode) ~ '@' ~ platform.db.host ~ ':' ~ platform.db.port ~ '/' ~ app_cfg.lexicon_db.name) | to_json }}
   CELERY_BROKER_URL: {{ ('amqp://' ~ app_cfg.rabbitmq.username ~ ':' ~ (almonium_env.books.rabbitmq.password | urlencode) ~ '@' ~ platform.rabbitmq.host ~ ':' ~ platform.rabbitmq.port ~ '/' ~ (app_cfg.rabbitmq.vhost | urlencode)) | to_json }}
   MEDIA_ROOT: "/app/media"
   NLP_EMBEDDING_MODEL: {{ books.shared.embedding_model | to_json }}

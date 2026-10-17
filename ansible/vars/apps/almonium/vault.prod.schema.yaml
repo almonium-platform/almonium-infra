@@ -23,6 +23,9 @@ rabbitmq:
 books:
   db:
     password: ""
+  # the DB stack's almonium_books_lexicon reader role for this environment
+  lexicon_db:
+    password: ""
   rabbitmq:
     password: ""
   django:

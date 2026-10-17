@@ -35,6 +35,7 @@
           - deploy_environment in ["prod", "staging"]
           - (deploy_image_digest | default('')) is match('^sha256:[0-9a-f]{64}$')
           - almonium_env.books.db.password | string | length > 0
+          - almonium_env.books.lexicon_db.password | string | length > 0
           - almonium_env.books.rabbitmq.password | string | length > 0
           - almonium_env.books.django.secret_key | string | length >= 32
           - almonium_env.books.django.admin_username | string | length > 0

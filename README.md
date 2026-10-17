@@ -103,6 +103,17 @@ vault; `promotion_targets` in `ansible/vars/apps/books/vars.yaml` says where an
 environment may push (staging to production, production nowhere). A laptop
 that promotes to staging carries staging's secret in its local `.env`.
 
+The Books processor also reads the backend's `lexicon` schema of its own
+environment to resolve lexeme and sense ids, through a read-only PostgreSQL
+role (`almonium_books_lexicon_<environment>`) that can connect to the backend
+database and select from that one schema and nothing else. The DB stack
+declares it under `postgres_reader_grants` in `ansible/vars/stacks/db/vars.yaml`
+and creates the role, the schema and its grants; the password is
+`postgres_reader_passwords` in the DB vault and `books.lexicon_db.password` in
+each environment's Almonium vault. Adding or rotating one is therefore a vault
+edit followed by the **Deploy Postgres DB** workflow, then a Books deployment to
+pick up `LEXICON_DATABASE_URL`.
+
 ## PostgreSQL backups
 
 The database role creates fresh custom-format dumps for every tenant marked

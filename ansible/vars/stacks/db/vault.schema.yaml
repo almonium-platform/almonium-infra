@@ -7,6 +7,10 @@ postgres_tenant_passwords:
   "almonium_books:prod": ""
   "almonium_books:staging": ""
 
+postgres_reader_passwords:
+  "almonium_books_lexicon:prod": ""
+  "almonium_books_lexicon:staging": ""
+
 db_backup:
   restic_password: ""
   b2:

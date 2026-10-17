@@ -65,6 +65,30 @@
   loop_control:
     label: "{{ item.app_id }}:{{ item.environment }}"
 
+- name: Validate PostgreSQL reader grant declarations
+  assert:
+    that:
+      - item.reader_id is defined
+      - item.environment is defined
+      - item.reader_role is defined
+      - item.reader_role is match('^[A-Za-z0-9_]+$')
+      - item.reader_role not in (postgres_app_tenants | map(attribute='db_user') | list)
+      - item.db_name is defined
+      - item.db_name in (postgres_app_tenants | map(attribute='db_name') | list)
+      - item.db_schema is defined
+      - item.db_schema is match('^[A-Za-z0-9_]+$')
+      - item.schema_owner is defined
+      - item.schema_owner == (postgres_app_tenants | selectattr('db_name', 'equalto', item.db_name) | map(attribute='db_user') | first)
+      - (postgres_reader_passwords | default({}))[item.reader_id ~ ':' ~ item.environment] is defined
+      - ((postgres_reader_passwords | default({}))[item.reader_id ~ ':' ~ item.environment] | string | length) > 0
+    fail_msg: >-
+      Invalid postgres reader grant declaration (the reader must not be a tenant, the database
+      must be a tenant database whose owner is schema_owner, and the password must exist in
+      postgres_reader_passwords): {{ item | to_nice_json }}
+  loop: "{{ postgres_reader_grants | default([]) }}"
+  loop_control:
+    label: "{{ item.reader_id }}:{{ item.environment }}"
+
 - name: Validate B2 backup configuration
   ansible.builtin.assert:
     that:
@@ -259,3 +283,51 @@
   loop: "{{ postgres_app_tenants }}"
   loop_control:
     label: "{{ item.db_name }}"
+
+- name: Ensure reader roles exist and passwords are current
+  shell: |
+    docker exec postgres psql -U {{ db_admin_user | default('postgres') }} -v ON_ERROR_STOP=1 -c "
+    DO \$\$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_roles WHERE rolname='{{ item.reader_role }}'
+      ) THEN
+        EXECUTE format(
+          'CREATE ROLE %I LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT PASSWORD %L',
+          '{{ item.reader_role }}',
+          '{{ postgres_reader_passwords[item.reader_id ~ ":" ~ item.environment] | replace("'", "''") }}'
+        );
+      ELSE
+        EXECUTE format(
+          'ALTER ROLE %I LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT PASSWORD %L',
+          '{{ item.reader_role }}',
+          '{{ postgres_reader_passwords[item.reader_id ~ ":" ~ item.environment] | replace("'", "''") }}'
+        );
+      END IF;
+    END
+    \$\$;
+    ALTER ROLE {{ item.reader_role }} SET default_transaction_read_only = on;
+    ALTER ROLE {{ item.reader_role }} SET search_path = {{ item.db_schema }};
+    GRANT CONNECT ON DATABASE {{ item.db_name }} TO {{ item.reader_role }};
+    "
+  changed_when: false
+  loop: "{{ postgres_reader_grants | default([]) }}"
+  loop_control:
+    label: "{{ item.reader_id }}:{{ item.environment }}"
+
+- name: Ensure reader schemas exist and are readable by their reader
+  shell: |
+    docker exec postgres psql -U {{ db_admin_user | default('postgres') }} -d {{ item.db_name }} -v ON_ERROR_STOP=1 -c "
+      CREATE SCHEMA IF NOT EXISTS {{ item.db_schema }} AUTHORIZATION {{ item.schema_owner }};
+      GRANT USAGE ON SCHEMA {{ item.db_schema }} TO {{ item.reader_role }};
+      GRANT SELECT ON ALL TABLES IN SCHEMA {{ item.db_schema }} TO {{ item.reader_role }};
+      GRANT SELECT ON ALL SEQUENCES IN SCHEMA {{ item.db_schema }} TO {{ item.reader_role }};
+      ALTER DEFAULT PRIVILEGES FOR ROLE {{ item.schema_owner }} IN SCHEMA {{ item.db_schema }}
+        GRANT SELECT ON TABLES TO {{ item.reader_role }};
+      ALTER DEFAULT PRIVILEGES FOR ROLE {{ item.schema_owner }} IN SCHEMA {{ item.db_schema }}
+        GRANT SELECT ON SEQUENCES TO {{ item.reader_role }};
+    "
+  changed_when: false
+  loop: "{{ postgres_reader_grants | default([]) }}"
+  loop_control:
+    label: "{{ item.reader_id }}:{{ item.environment }}"
