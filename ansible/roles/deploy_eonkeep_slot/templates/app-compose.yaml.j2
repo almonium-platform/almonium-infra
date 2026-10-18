@@ -1,0 +1,40 @@
+services:
+  app:
+    image: "{{ eonkeep.shared.image }}:{{ deploy_image_tag }}"
+    container_name: "eonkeep_{{ deploy_environment }}_{{ deploy_slot }}"
+    environment:
+      PORT: "{{ app_internal_port }}"
+      DB_HOST: "{{ platform.db.host }}"
+      DB_PORT: "{{ platform.db.port }}"
+      DB_NAME: "{{ app_cfg.db.name }}"
+      DB_USERNAME: "{{ app_cfg.db.username }}"
+      DB_PASSWORD: "{{ eonkeep_env.db.password }}"
+      KEEP_VERSIONS: "{{ eonkeep.shared.keep_versions }}"
+      MAX_BLOB_BYTES: "{{ eonkeep.shared.max_blob_bytes }}"
+      RUST_LOG: "info"
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy-net"
+      - "traefik.http.services.eonkeep-{{ deploy_environment }}-{{ deploy_slot }}.loadbalancer.server.port={{ app_internal_port }}"
+      - "traefik.http.routers.eonkeep-{{ deploy_environment }}-{{ deploy_slot }}.rule=Host(`{{ app_cfg.hostname }}`)"
+      - "traefik.http.routers.eonkeep-{{ deploy_environment }}-{{ deploy_slot }}.entrypoints=websecure"
+      - "traefik.http.routers.eonkeep-{{ deploy_environment }}-{{ deploy_slot }}.tls=true"
+      - "traefik.http.routers.eonkeep-{{ deploy_environment }}-{{ deploy_slot }}.tls.certresolver=porkbun"
+      - "traefik.http.routers.eonkeep-{{ deploy_environment }}-{{ deploy_slot }}.service=eonkeep-{{ deploy_environment }}-{{ deploy_slot }}"
+      - "traefik.http.routers.eonkeep-{{ deploy_environment }}-{{ deploy_slot }}.priority=100"
+
+    ports:
+      - "127.0.0.1:{{ local_healthcheck_port }}:{{ app_internal_port }}"
+
+    networks:
+      - proxy-net
+      - db-net
+
+    restart: unless-stopped
+
+networks:
+  proxy-net:
+    external: true
+  db-net:
+    external: true

@@ -32,6 +32,13 @@ postgres_app_tenants:
     db_schema: "public"
     backup: true
 
+  - app_id: "eonkeep"
+    environment: "prod"
+    db_name: "eonkeep"
+    db_user: "eonkeep_prod"
+    db_schema: "public"
+    backup: true
+
   - app_id: "almonium_books"
     environment: "prod"
     db_name: "almonium_books"

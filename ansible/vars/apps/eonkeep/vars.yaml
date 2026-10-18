@@ -1,0 +1,13 @@
+# EonKeep: optional end-to-end encrypted sync/backup API plus the public site.
+# The server stores only ciphertext; see ../../../../eonkeep/server.
+shared:
+  image: "ghcr.io/okuzan/eonkeep-server"
+  keep_versions: "30"
+  max_blob_bytes: "2097152"
+
+deployments:
+  prod:
+    hostname: "eonkeep.almonium.com"
+    db:
+      name: "eonkeep"
+      username: "eonkeep_prod"

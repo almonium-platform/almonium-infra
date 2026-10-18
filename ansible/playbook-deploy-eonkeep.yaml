@@ -1,0 +1,81 @@
+- name: Deploy EonKeep sync server
+  hosts: almonium
+  gather_facts: false
+
+  vars:
+    # deploy_environment, deploy_image_tag, deploy_gh_actor, deploy_gh_token come from CI.
+    infra_root: "/home/almonium/infra"
+    project_name_base: "eonkeep"
+    app_internal_port: "8080"
+
+  pre_tasks:
+    - name: Validate deploy environment
+      ansible.builtin.assert:
+        that:
+          - deploy_environment == "prod"
+        fail_msg: "eonkeep only supports the prod environment"
+
+    - name: Load EonKeep app vars
+      ansible.builtin.include_vars:
+        name: eonkeep
+        file: "{{ playbook_dir }}/vars/apps/eonkeep/vars.yaml"
+
+    - name: Load EonKeep prod secrets
+      ansible.builtin.include_vars:
+        name: eonkeep_env
+        file: "{{ playbook_dir }}/vars/apps/eonkeep/vault.prod.yaml"
+
+    - name: Select deployment config
+      ansible.builtin.set_fact:
+        app_cfg: "{{ eonkeep.deployments[deploy_environment] }}"
+
+  tasks:
+    - name: Determine color file path
+      ansible.builtin.set_fact:
+        color_file_path: "{{ infra_root }}/.next_color_{{ deploy_environment }}_eonkeep"
+        docker_compose_project_name: "{{ project_name_base }}_{{ deploy_environment }}"
+
+    - name: Read current color for the environment
+      ansible.builtin.slurp:
+        src: "{{ color_file_path }}"
+      register: color_file_content
+      failed_when: false
+
+    - name: Choose target and previous slots
+      ansible.builtin.set_fact:
+        deploy_slot: >-
+          {{ 'green' if (color_file_content.content is defined
+                         and (color_file_content.content | b64decode) == 'green') else 'blue' }}
+
+    - name: Set previous slot and local healthcheck port
+      ansible.builtin.set_fact:
+        previous_slot: "{{ 'green' if deploy_slot == 'blue' else 'blue' }}"
+        local_healthcheck_port: "{{ '8891' if deploy_slot == 'blue' else '8892' }}"
+
+    - name: Log in to GitHub Container Registry
+      community.docker.docker_login:
+        registry: ghcr.io
+        username: "{{ deploy_gh_actor }}"
+        password: "{{ deploy_gh_token }}"
+
+    - name: Deploy target slot
+      ansible.builtin.import_role:
+        name: deploy_eonkeep_slot
+
+    - name: Stop and remove previous slot
+      ansible.builtin.command: >-
+        docker rm -f eonkeep_{{ deploy_environment }}_{{ previous_slot }}
+      register: stop_previous_result
+      changed_when: stop_previous_result.rc == 0
+      failed_when: false
+
+    - name: Update color file to point to next slot
+      ansible.builtin.copy:
+        content: "{{ previous_slot }}"
+        dest: "{{ color_file_path }}"
+        mode: "0644"
+      become: true
+
+    - name: Deployment summary
+      ansible.builtin.debug:
+        msg: "EonKeep {{ deploy_environment }} switched to {{ deploy_slot }} on {{ app_cfg.hostname }}"

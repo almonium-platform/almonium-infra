@@ -14,7 +14,7 @@ GitHub Actions triggers the relevant deployment playbooks.
 | --- | --- |
 | Edge | Traefik, HTTPS certificates via Porkbun DNS-01 |
 | Shared application services | PostgreSQL with PgBouncer, RabbitMQ |
-| Applications | Almonium (prod and staging), Almonium Books (prod and staging), FamSub |
+| Applications | Almonium (prod and staging), Almonium Books (prod and staging), FamSub, EonKeep sync |
 | Frontends and static sites | Almonium FE, FamSub FE, TG Voices |
 | Personal services | Emby and Syncthing |
 
@@ -53,6 +53,10 @@ nginx-configs/          Shared frontend Nginx configuration
   credentials.
 - **Media Stack** and **TG Voices** first update the server checkout, then run
   Docker Compose. They do not rely on the separate sync workflow winning a race.
+- **EonKeep** (`eonkeep.almonium.com`) is one container serving the public site
+  and the optional sync API. Clients encrypt before upload, so its database holds
+  only ciphertext. The EonKeep repository's CI builds the ARM64 image and runs
+  `ansible/playbook-deploy-eonkeep.yaml` (blue/green on local ports 8891/8892).
 - **Almonium** and **FamSub** backend/frontend playbooks are intended to be
   invoked by their application CI pipelines with an image tag and registry
   credentials. Backend deployments use blue/green slots and a health check. If
@@ -197,6 +201,7 @@ Vault IDs and their encrypted files are:
 | `almonium_staging` | `ansible/vars/apps/almonium/vault.staging.yaml` |
 | `almonium_shared` | `ansible/vars/apps/almonium/vault.shared.yaml` |
 | `fam_sub_prod` | `ansible/vars/apps/fam_sub/vault.prod.yaml` |
+| `eonkeep_prod` | `ansible/vars/apps/eonkeep/vault.prod.yaml` |
 | `db` | `ansible/vars/stacks/db/vault.yaml` |
 | `rabbitmq` | `ansible/vars/stacks/rabbitmq/vault.yaml` |
 
