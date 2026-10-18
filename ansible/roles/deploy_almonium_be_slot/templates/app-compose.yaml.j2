@@ -48,6 +48,13 @@ services:
       ALMONIUM_BOOKS_PUBLISHER_SECRET: "{{ almonium_shared.books.publisher_secret }}"
       ALMONIUM_BOOKS_PROCESSOR_URL: "{{ app_cfg.books_processor_url }}"
 
+      # Audio clips: Cloudflare R2 through the S3 API, one bucket shared by both environments.
+      AUDIO_S3_ENDPOINT: "{{ almonium.shared.audio.s3.endpoint }}"
+      AUDIO_S3_REGION: "{{ almonium.shared.audio.s3.region }}"
+      AUDIO_S3_BUCKET: "{{ almonium.shared.audio.s3.bucket }}"
+      AUDIO_S3_ACCESS_KEY_ID: {{ almonium_shared.audio.s3.access_key_id | to_json }}
+      AUDIO_S3_SECRET_ACCESS_KEY: {{ almonium_shared.audio.s3.secret_access_key | to_json }}
+
     ports:
       - "127.0.0.1:{{ local_healthcheck_port }}:{{ app_internal_port }}"
 

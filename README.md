@@ -103,6 +103,13 @@ vault; `promotion_targets` in `ansible/vars/apps/books/vars.yaml` says where an
 environment may push (staging to production, production nowhere). A laptop
 that promotes to staging carries staging's secret in its local `.env`.
 
+Audio clips for the dictionary live in one Cloudflare R2 bucket,
+`almonium-audio`, shared by production and staging: clips are immutable and
+keyed by content, so the two environments never disagree about an object. The
+backend reaches it through the S3 API with the `almonium-audio-backend` token,
+whose key pair sits under `audio.s3` in the shared Almonium vault; the endpoint
+and bucket name are plain values in `ansible/vars/apps/almonium/vars.yaml`.
+
 The Books processor also reads the backend's `lexicon` schema of its own
 environment to resolve lexeme and sense ids, through a read-only PostgreSQL
 role (`almonium_books_lexicon_<environment>`) that can connect to the backend

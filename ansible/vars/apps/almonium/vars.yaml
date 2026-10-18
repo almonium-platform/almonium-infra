@@ -2,6 +2,12 @@ shared:
   local_port: "8080"
   debug_port: "5005"
   context_path: "/api/v1"
+  # Cloudflare R2, S3-compatible. One bucket for prod and staging; see the shared vault schema.
+  audio:
+    s3:
+      endpoint: "https://7e8858e7beb85c9f56d28869d65610eb.r2.cloudflarestorage.com"
+      region: "auto"
+      bucket: "almonium-audio"
 
 deployments:
   prod:

@@ -59,6 +59,13 @@
           - almonium_shared.books.publisher_secret | string | length >= 32
         fail_msg: "Almonium Books publication secret is incomplete."
 
+    - name: Validate audio bucket credentials
+      ansible.builtin.assert:
+        that:
+          - almonium_shared.audio.s3.access_key_id | string | length > 0
+          - almonium_shared.audio.s3.secret_access_key | string | length > 0
+        fail_msg: "The R2 token for the almonium-audio bucket is missing from the shared Almonium vault."
+
     - name: Validate Paddle Billing configuration
       ansible.builtin.assert:
         that:

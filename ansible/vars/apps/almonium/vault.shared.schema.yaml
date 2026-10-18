@@ -10,3 +10,11 @@ books:
   promotion_secrets:
     staging: ""
     prod: ""
+
+# Cloudflare R2 bucket almonium-audio, one bucket for both environments:
+# clips are immutable and keyed by content, so prod and staging share them.
+# The token is "almonium-audio-backend", Object Read & Write on that bucket only.
+audio:
+  s3:
+    access_key_id: ""
+    secret_access_key: ""
