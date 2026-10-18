@@ -1,23 +1,20 @@
-# Cosmos: private reader for the transcribed Q&A episodes. Code and data are copied to
-# /home/almonium/cosmos by deploy.sh in the cosmos repository; this file only runs it.
-# Access needs the code in SECRET_CODE (from /home/almonium/cosmos/.env, written by that script).
+# Cosmos: private reader for transcribed Q&A episodes, which also transcribes new ones.
+# deploy.sh in the cosmos repository copies the source to /home/almonium/cosmos/src and writes
+# /home/almonium/cosmos/.env (SECRET_CODE, GROQ_API_KEY); the image is built here from that source.
+# Episodes and their Q&A data live in /home/almonium/cosmos/data, the only writable path.
 services:
   cosmos:
-    image: python:3.12-alpine
+    build:
+      context: /home/almonium/cosmos/src
+    image: cosmos:local
+    pull_policy: build
     container_name: cosmos
-    user: "65534:65534"
-    working_dir: /app
-    command: ["python", "server.py"]
     env_file: /home/almonium/cosmos/.env
-    environment:
-      - HOST=0.0.0.0
-      - PORT=8000
-      - READ_ONLY=1
-      - PYTHONDONTWRITEBYTECODE=1
-      - PYTHONUNBUFFERED=1
     volumes:
-      - /home/almonium/cosmos/app:/app:ro
+      - /home/almonium/cosmos/data:/data
     read_only: true
+    tmpfs:
+      - /tmp
     networks:
       - proxy-net
     labels:

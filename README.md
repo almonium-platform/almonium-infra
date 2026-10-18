@@ -57,11 +57,14 @@ nginx-configs/          Shared frontend Nginx configuration
   and the optional sync API. Clients encrypt before upload, so its database holds
   only ciphertext. The EonKeep repository's CI builds the ARM64 image and runs
   `ansible/playbook-deploy-eonkeep.yaml` (blue/green on local ports 8891/8892).
-- **Cosmos** (`cosmos.almonium.com`) is a private, read-only reader for a
-  personal transcript collection, behind an access code. The cosmos
-  repository's `deploy.sh` copies its code and data to `/home/almonium/cosmos`
-  (with a `.env` holding only `SECRET_CODE`) and recreates the container; the
-  **Deploy Cosmos** workflow applies `services/cosmos` itself.
+- **Cosmos** (`cosmos.almonium.com`) is a private reader for a personal
+  transcript collection, behind an access code; it also transcribes new
+  YouTube episodes through Groq. The cosmos repository's `deploy.sh` copies its
+  source to `/home/almonium/cosmos/src`, writes `/home/almonium/cosmos/.env`
+  (`SECRET_CODE`, `GROQ_API_KEY`), builds the image on the host and recreates
+  the container. Its data lives in `/home/almonium/cosmos/data` and is not
+  backed up by the DB backup job. The **Deploy Cosmos** workflow applies
+  `services/cosmos` itself.
 - **Almonium** and **FamSub** backend/frontend playbooks are intended to be
   invoked by their application CI pipelines with an image tag and registry
   credentials. Backend deployments use blue/green slots and a health check. If

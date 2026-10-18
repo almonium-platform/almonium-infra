@@ -13,5 +13,5 @@
       community.docker.docker_compose_v2:
         project_src: /home/almonium/infra/services/cosmos
         state: present
-        pull: always
+        pull: policy
         remove_orphans: true
