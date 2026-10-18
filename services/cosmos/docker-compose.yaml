@@ -7,8 +7,7 @@ services:
     build:
       context: /home/almonium/cosmos/src
       args:
-        # set by deploy.sh: the cosmos commit being deployed, and the day (refreshes yt-dlp daily)
-        REVISION: ${REVISION:-unknown}
+        # set by deploy.sh to the day, so yt-dlp is refreshed at most daily
         YTDLP_REFRESH: ${YTDLP_REFRESH:-0}
     image: cosmos:local
     pull_policy: build
