@@ -61,8 +61,19 @@ prometheus.exporter.unix "host" {
   }
 }
 
+// The exporters name their target after Alloy's container id, which changes on
+// every redeploy; name it after the host so alerts keep one series.
+discovery.relabel "host" {
+  targets = prometheus.exporter.unix.host.targets
+
+  rule {
+    target_label = "instance"
+    replacement  = "{{ monitoring_host_label }}"
+  }
+}
+
 prometheus.scrape "host" {
-  targets         = prometheus.exporter.unix.host.targets
+  targets         = discovery.relabel.host.output
   job_name        = "integrations/unix"
   scrape_interval = "60s"
   forward_to      = [prometheus.remote_write.cloud.receiver]
@@ -76,8 +87,17 @@ prometheus.exporter.cadvisor "containers" {
   storage_duration = "5m"
 }
 
+discovery.relabel "cadvisor" {
+  targets = prometheus.exporter.cadvisor.containers.targets
+
+  rule {
+    target_label = "instance"
+    replacement  = "{{ monitoring_host_label }}"
+  }
+}
+
 prometheus.scrape "containers" {
-  targets         = prometheus.exporter.cadvisor.containers.targets
+  targets         = discovery.relabel.cadvisor.output
   job_name        = "integrations/cadvisor"
   scrape_interval = "60s"
   forward_to      = [prometheus.relabel.containers.receiver]
@@ -206,6 +226,39 @@ prometheus.scrape "rabbitmq" {
   job_name        = "integrations/rabbitmq"
   scrape_interval = "60s"
   forward_to      = [prometheus.remote_write.cloud.receiver]
+}
+
+// Per-queue depth and consumers. The aggregate endpoint above sums every
+// queue; this one names them, which is what shows a backlog or a dead letter.
+prometheus.scrape "rabbitmq_queues" {
+  targets = [{
+    __address__ = "rabbitmq:15692",
+    app         = "rabbitmq",
+  }]
+  job_name        = "integrations/rabbitmq-queues"
+  metrics_path    = "/metrics/detailed"
+  params          = {
+    family = ["queue_coarse_metrics", "queue_consumer_count"],
+  }
+  scrape_interval = "60s"
+  forward_to      = [prometheus.relabel.rabbitmq_queues.receiver]
+}
+
+prometheus.relabel "rabbitmq_queues" {
+  forward_to = [prometheus.remote_write.cloud.receiver]
+
+  rule {
+    source_labels = ["__name__"]
+    regex         = "rabbitmq_detailed_queue_(messages_ready|messages_unacked|consumers)"
+    action        = "keep"
+  }
+
+  // Celery names a queue per worker process; each restart would add series.
+  rule {
+    source_labels = ["queue"]
+    regex         = "celeryev\\..*|.*\\.pidbox|amq\\.gen-.*|spring\\.gen-.*"
+    action        = "drop"
+  }
 }
 
 // ---------------------------------------------------------------- logs
