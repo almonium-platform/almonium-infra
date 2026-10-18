@@ -111,6 +111,14 @@ prometheus.relabel "containers" {
     regex         = "container_(cpu_usage_seconds_total|memory_working_set_bytes|memory_rss|spec_memory_limit_bytes|network_receive_bytes_total|network_transmit_bytes_total|fs_reads_bytes_total|fs_writes_bytes_total|oom_events_total|start_time_seconds|last_seen)|machine_(cpu_cores|memory_bytes)"
     action        = "keep"
   }
+
+  // cAdvisor copies every Docker label (compose hashes, image descriptions,
+  // Traefik rules) onto each series, and the cgroup id changes on every
+  // recreate; the container name is the identity that matters.
+  rule {
+    regex  = "container_label_.*|id"
+    action = "labeldrop"
+  }
 }
 
 // ---------------------------------------------------------------- Docker discovery
