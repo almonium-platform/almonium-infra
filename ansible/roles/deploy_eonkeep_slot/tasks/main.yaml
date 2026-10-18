@@ -1,3 +1,12 @@
+- name: Ensure the downloads directory exists
+  ansible.builtin.file:
+    path: "{{ eonkeep.shared.downloads_dir }}"
+    state: directory
+    owner: almonium
+    group: almonium
+    mode: "0755"
+  become: true
+
 - name: Ensure deployment directory exists
   ansible.builtin.file:
     path: "/home/almonium/deploy_slots/{{ docker_compose_project_name }}/{{ deploy_slot }}"

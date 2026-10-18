@@ -1,0 +1,54 @@
+# Publishes EonKeep desktop builds to eonkeep.almonium.com/downloads. Invoked by the
+# EonKeep repository's release workflow with release_src pointing at a local folder
+# that holds the bundles and latest.json.
+- name: Publish EonKeep desktop release
+  hosts: almonium
+  gather_facts: false
+
+  pre_tasks:
+    - name: Load EonKeep app vars
+      ansible.builtin.include_vars:
+        name: eonkeep
+        file: "{{ playbook_dir }}/vars/apps/eonkeep/vars.yaml"
+
+    - name: Require a release folder
+      ansible.builtin.assert:
+        that:
+          - release_src is defined
+          - (release_src ~ '/latest.json') is file
+        fail_msg: "release_src must be a local folder containing latest.json"
+
+  tasks:
+    - name: Ensure the downloads directory exists
+      ansible.builtin.file:
+        path: "{{ eonkeep.shared.downloads_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Upload bundles
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "{{ eonkeep.shared.downloads_dir }}/"
+        mode: "0644"
+      loop: "{{ query('fileglob', release_src ~ '/*.deb') + query('fileglob', release_src ~ '/*.AppImage') }}"
+
+    # Written last so the site never links to a file that isn't there yet.
+    - name: Publish the manifest
+      ansible.builtin.copy:
+        src: "{{ release_src }}/latest.json"
+        dest: "{{ eonkeep.shared.downloads_dir }}/latest.json"
+        mode: "0644"
+
+    - name: Find published bundles
+      ansible.builtin.find:
+        paths: "{{ eonkeep.shared.downloads_dir }}"
+        patterns: ["*.deb", "*.AppImage"]
+      register: bundles
+
+    - name: Keep only the newest releases
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ (bundles.files | sort(attribute='mtime', reverse=true))[eonkeep.shared.keep_releases * 2:] }}"
+      loop_control:
+        label: "{{ item.path | basename }}"
