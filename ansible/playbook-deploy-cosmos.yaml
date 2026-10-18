@@ -1,0 +1,17 @@
+- name: Deploy Cosmos
+  hosts: almonium
+
+  tasks:
+    - name: Update infra repository
+      ansible.builtin.git:
+        repo: https://github.com/almonium-platform/almonium-infra.git
+        dest: /home/almonium/infra
+        version: main
+        force: true
+
+    - name: Deploy Cosmos
+      community.docker.docker_compose_v2:
+        project_src: /home/almonium/infra/services/cosmos
+        state: present
+        pull: always
+        remove_orphans: true

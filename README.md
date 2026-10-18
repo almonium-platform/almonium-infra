@@ -15,7 +15,7 @@ GitHub Actions triggers the relevant deployment playbooks.
 | Edge | Traefik, HTTPS certificates via Porkbun DNS-01 |
 | Shared application services | PostgreSQL with PgBouncer, RabbitMQ |
 | Applications | Almonium (prod and staging), Almonium Books (prod and staging), FamSub, EonKeep sync |
-| Frontends and static sites | Almonium FE, FamSub FE, TG Voices |
+| Frontends and static sites | Almonium FE, FamSub FE, TG Voices, Cosmos |
 | Personal services | Emby and Syncthing |
 
 The Almonium workspace also includes `almonium-mobile`, an Expo/React Native
@@ -57,6 +57,11 @@ nginx-configs/          Shared frontend Nginx configuration
   and the optional sync API. Clients encrypt before upload, so its database holds
   only ciphertext. The EonKeep repository's CI builds the ARM64 image and runs
   `ansible/playbook-deploy-eonkeep.yaml` (blue/green on local ports 8891/8892).
+- **Cosmos** (`cosmos.almonium.com`) is a private, read-only reader for a
+  personal transcript collection, behind an access code. The cosmos
+  repository's `deploy.sh` copies its code and data to `/home/almonium/cosmos`
+  (with a `.env` holding only `SECRET_CODE`) and recreates the container; the
+  **Deploy Cosmos** workflow applies `services/cosmos` itself.
 - **Almonium** and **FamSub** backend/frontend playbooks are intended to be
   invoked by their application CI pipelines with an image tag and registry
   credentials. Backend deployments use blue/green slots and a health check. If
