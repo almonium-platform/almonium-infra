@@ -144,10 +144,13 @@ ships everything to the Grafana Cloud stack at <https://almonium.grafana.net>:
   `/api/v1/actuator/prometheus` on whichever slots are running. Traefik refuses
   that path from outside the host (`*-metrics` router in the backend route);
 - RabbitMQ's built-in Prometheus plugin at `rabbitmq:15692`;
-- every container's logs, labelled `container`, `app`, `env`, `slot` and
-  `level` (container `almonium_books_worker_prod_blue` becomes
-  `app=almonium_books_worker, env=prod, slot=blue`). Grafana Cloud keeps them
-  for 14 days, longer than the host's Docker log rotation.
+- logs from Almonium's containers, the services it depends on (Traefik,
+  PostgreSQL, PgBouncer, RabbitMQ) and Alloy itself, labelled `container`,
+  `app`, `env`, `slot` and `level` (container `almonium_books_worker_prod_blue`
+  becomes `app=almonium_books_worker, env=prod, slot=blue`). Grafana Cloud
+  keeps them for 14 days, longer than the host's Docker log rotation. The
+  other tenants report resource metrics only; to ship one's logs, add its
+  `app` to the `discovery.relabel "logs"` filter in the Alloy config.
 
 The write token (`monitoring_grafana_cloud_token`, scopes `metrics:write` and
 `logs:write` only) lives in `ansible/vars/stacks/monitoring/vault.yaml` under

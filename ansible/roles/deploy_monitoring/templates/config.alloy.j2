@@ -179,11 +179,22 @@ prometheus.scrape "rabbitmq" {
 
 // ---------------------------------------------------------------- logs
 
+// Logs only from Almonium's own containers, the services it depends on, and
+// Alloy itself. Other tenants of the host still report resource metrics above.
+discovery.relabel "logs" {
+  targets = discovery.relabel.names.output
+
+  rule {
+    source_labels = ["app"]
+    regex         = "almonium.*|traefik_proxy|postgres|pgbouncer|rabbitmq|alloy"
+    action        = "keep"
+  }
+}
+
 loki.source.docker "containers" {
-  host          = "unix:///var/run/docker.sock"
-  targets       = discovery.docker.containers.targets
-  relabel_rules = discovery.relabel.names.rules
-  forward_to    = [loki.process.containers.receiver]
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.logs.output
+  forward_to = [loki.process.containers.receiver]
 }
 
 loki.process "containers" {
