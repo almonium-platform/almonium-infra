@@ -133,6 +133,28 @@ each environment's Almonium vault. Adding or rotating one is therefore a vault
 edit followed by the **Deploy Postgres DB** workflow, then a Books deployment to
 pick up `LEXICON_DATABASE_URL`.
 
+## Monitoring
+
+One Grafana Alloy container (`/opt/monitoring`, role `deploy_monitoring`)
+ships everything to the Grafana Cloud stack at <https://almonium.grafana.net>:
+
+- host metrics (CPU, memory, disk, network, pressure) and per-container CPU,
+  memory, network and OOM events, trimmed to fit the free tier's 10k series;
+- the Almonium backend's Micrometer metrics, scraped over `proxy-net` from
+  `/api/v1/actuator/prometheus` on whichever slots are running. Traefik refuses
+  that path from outside the host (`*-metrics` router in the backend route);
+- RabbitMQ's built-in Prometheus plugin at `rabbitmq:15692`;
+- every container's logs, labelled `container`, `app`, `env`, `slot` and
+  `level` (container `almonium_books_worker_prod_blue` becomes
+  `app=almonium_books_worker, env=prod, slot=blue`). Grafana Cloud keeps them
+  for 14 days, longer than the host's Docker log rotation.
+
+The write token (`monitoring_grafana_cloud_token`, scopes `metrics:write` and
+`logs:write` only) lives in `ansible/vars/stacks/monitoring/vault.yaml` under
+the `monitoring` vault id; GitHub Actions has its password as
+`ANSIBLE_VAULT_PASSWORD_MONITORING`. The **Deploy Monitoring** workflow applies
+the stack. Alloy's own UI binds to localhost: `ssh -L 12345:127.0.0.1:12345 oci`.
+
 ## PostgreSQL backups
 
 The database role creates fresh custom-format dumps for every tenant marked

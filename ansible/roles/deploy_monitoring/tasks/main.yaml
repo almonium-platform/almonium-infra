@@ -1,0 +1,62 @@
+- name: Load monitoring stack vars
+  ansible.builtin.include_vars:
+    file: "{{ playbook_dir }}/vars/stacks/monitoring/vars.yaml"
+
+- name: Load Almonium app vars
+  ansible.builtin.include_vars:
+    name: almonium
+    file: "{{ playbook_dir }}/vars/apps/almonium/vars.yaml"
+
+- name: Load monitoring stack secrets
+  ansible.builtin.include_vars:
+    file: "{{ playbook_dir }}/vars/stacks/monitoring/vault.yaml"
+
+- name: Validate monitoring secrets
+  ansible.builtin.assert:
+    that:
+      - monitoring_grafana_cloud_token is defined
+      - monitoring_grafana_cloud_token | string | length > 0
+    fail_msg: "monitoring_grafana_cloud_token must be defined in the monitoring vault."
+
+- name: Ensure monitoring stack dir exists
+  ansible.builtin.file:
+    path: /opt/monitoring
+    state: directory
+    mode: "0755"
+
+- name: Write Alloy credentials
+  ansible.builtin.copy:
+    dest: /opt/monitoring/alloy.env
+    content: "GRAFANA_CLOUD_TOKEN={{ monitoring_grafana_cloud_token }}\n"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  register: alloy_env
+
+- name: Template Alloy configuration
+  ansible.builtin.template:
+    src: config.alloy.j2
+    dest: /opt/monitoring/config.alloy
+    mode: "0644"
+  register: alloy_config
+
+- name: Template monitoring compose file
+  ansible.builtin.template:
+    src: monitoring-compose.yaml.j2
+    dest: /opt/monitoring/docker-compose.yaml
+    mode: "0644"
+
+- name: Start monitoring stack
+  community.docker.docker_compose_v2:
+    project_src: /opt/monitoring
+    state: present
+    recreate: "{{ 'always' if (alloy_env is changed or alloy_config is changed) else 'auto' }}"
+
+- name: Wait for Alloy to be ready
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:12345/-/ready"
+  register: alloy_ready
+  retries: 20
+  delay: 3
+  until: alloy_ready.status == 200

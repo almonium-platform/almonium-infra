@@ -1,0 +1,11 @@
+# Grafana Cloud stack "almonium" (https://almonium.grafana.net), region prod-eu-west-2.
+# The instance IDs are the basic-auth usernames; the token in the vault is the password.
+monitoring_alloy_image: "grafana/alloy:v1.20.1"
+monitoring_host_label: "almonium-oci"
+monitoring_grafana_cloud:
+  prometheus:
+    url: "https://prometheus-prod-65-prod-eu-west-2.grafana.net/api/prom/push"
+    username: "2940063"
+  loki:
+    url: "https://logs-prod-012.grafana.net/loki/api/v1/push"
+    username: "1465705"

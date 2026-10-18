@@ -11,6 +11,18 @@ http:
       tls:
         certResolver: porkbun
 
+    # Alloy scrapes metrics over proxy-net; from the Internet the path is refused.
+    almonium-be-{{ deploy_environment }}-metrics:
+      rule: "Host(`{{ app_cfg.api_hostname }}`) && PathPrefix(`{{ almonium.shared.context_path }}/actuator/prometheus`)"
+      priority: 2000
+      entryPoints:
+        - websecure
+      service: almonium-be-{{ deploy_environment }}
+      middlewares:
+        - almonium-be-{{ deploy_environment }}-host-only
+      tls:
+        certResolver: porkbun
+
   services:
     almonium-be-{{ deploy_environment }}:
       loadBalancer:
@@ -22,3 +34,8 @@ http:
       headers:
         customResponseHeaders:
           X-Almonium-Deploy-Slot: "{{ route_slot }}"
+
+    almonium-be-{{ deploy_environment }}-host-only:
+      ipAllowList:
+        sourceRange:
+          - "127.0.0.1/32"

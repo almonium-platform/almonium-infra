@@ -1,0 +1,3 @@
+# Grafana Cloud access-policy token "alloy-almonium-host": scopes metrics:write
+# and logs:write on the almonium stack, nothing else.
+monitoring_grafana_cloud_token: ""

@@ -1,0 +1,4 @@
+- hosts: almonium
+  become: yes
+  roles:
+    - deploy_monitoring
