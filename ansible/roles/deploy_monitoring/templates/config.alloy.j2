@@ -131,13 +131,44 @@ discovery.relabel "names" {
 
 // ---------------------------------------------------------------- Almonium backend
 
+// The shared discovery reports each container once, on whichever network
+// Docker lists first; the scrape needs the proxy-net address specifically.
+discovery.docker "backend" {
+  host                = "unix:///var/run/docker.sock"
+  match_first_network = false
+}
+
 discovery.relabel "backend" {
-  targets = discovery.relabel.names.output
+  targets = discovery.docker.backend.targets
 
   rule {
-    source_labels = ["app"]
-    regex         = "almonium"
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/almonium_(prod|staging)_(blue|green)"
     action        = "keep"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/almonium_(prod|staging)_(blue|green)"
+    target_label  = "env"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/almonium_(prod|staging)_(blue|green)"
+    target_label  = "slot"
+    replacement   = "$2"
+  }
+
+  rule {
+    target_label = "app"
+    replacement  = "almonium"
   }
 
   rule {
