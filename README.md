@@ -152,6 +152,25 @@ ships everything to the Grafana Cloud stack at <https://almonium.grafana.net>:
   other tenants report resource metrics only; to ship one's logs, add its
   `app` to the `discovery.relabel "logs"` filter in the Alloy config.
 
+Grafana itself is configured from `grafana/` in this repository, applied with
+`GRAFANA_TOKEN=<Editor service-account token> grafana/apply.sh` (every call is
+an upsert, and resources stay editable in the UI; export UI edits back here):
+
+- `dashboards/almonium-overview.json`: HTTP traffic, latency and failing
+  endpoints, backend and Books error logs, JVM and connection pool, host,
+  per-container memory/CPU/restarts, RabbitMQ queues and dead letters, and
+  outside-in uptime with TLS expiry;
+- `alerting/`: 18 rules in folder Almonium (critical: prod backend down,
+  public endpoint failing, telemetry silent, 5xx rate, disk, memory; warning:
+  error logs, OOM kills, crash loops, heap, DB pool waits, dead letters,
+  backlog, missing consumers, RabbitMQ alarms, TLS expiry, staging down), sent
+  by email to tech@almonium.com (critical repeats every 2 h, warnings 12 h).
+
+Synthetic Monitoring probes the public URLs from Frankfurt (and London for the
+production API): `api`, `almonium.com`, `books` and the staging API, about
+65k of the free tier's 100k monthly executions. The checks live in Grafana
+(Testing & synthetics > Synthetics), not in this repository.
+
 The write token (`monitoring_grafana_cloud_token`, scopes `metrics:write` and
 `logs:write` only) lives in `ansible/vars/stacks/monitoring/vault.yaml` under
 the `monitoring` vault id; GitHub Actions has its password as

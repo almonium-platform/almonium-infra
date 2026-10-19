@@ -1,0 +1,750 @@
+{
+  "title": "almonium-warning",
+  "folderUid": "almonium",
+  "interval": 60,
+  "rules": [
+    {
+      "uid": "alm-backend-errors",
+      "title": "Backend logging errors",
+      "condition": "C",
+      "for": "0s",
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "labels": {
+        "severity": "warning",
+        "project": "almonium"
+      },
+      "annotations": {
+        "summary": "The production backend logged {{ humanize $values.B.Value }} errors in 15 minutes.",
+        "description": "Open Backend errors and warnings on the dashboard, or Explore: {app=\"almonium\", env=\"prod\", level=\"ERROR\"}.",
+        "runbook_url": "https://almonium.grafana.net/d/almonium-overview"
+      },
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": {
+            "from": 600,
+            "to": 0
+          },
+          "datasourceUid": "grafanacloud-prom",
+          "model": {
+            "refId": "A",
+            "expr": "sum(increase(logback_events_total{env=\"prod\", level=\"error\"}[15m]))",
+            "instant": true,
+            "range": false
+          }
+        },
+        {
+          "refId": "B",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "reduce",
+            "expression": "A",
+            "reducer": "last"
+          }
+        },
+        {
+          "refId": "C",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "C",
+            "type": "threshold",
+            "expression": "B",
+            "conditions": [
+              {
+                "evaluator": {
+                  "type": "gt",
+                  "params": [
+                    5
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "uid": "alm-books-errors",
+      "title": "Books processor logging errors",
+      "condition": "C",
+      "for": "0s",
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "labels": {
+        "severity": "warning",
+        "project": "almonium"
+      },
+      "annotations": {
+        "summary": "The Books processor or worker logged errors in production.",
+        "description": "Explore: {app=~\"almonium_books.*\", env=\"prod\", level=~\"ERROR|CRITICAL\"}.",
+        "runbook_url": "https://almonium.grafana.net/d/almonium-overview"
+      },
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": {
+            "from": 600,
+            "to": 0
+          },
+          "datasourceUid": "grafanacloud-logs",
+          "model": {
+            "refId": "A",
+            "expr": "sum(count_over_time({app=~\"almonium_books.*\", env=\"prod\", level=~\"ERROR|CRITICAL\"}[15m]))",
+            "queryType": "instant"
+          }
+        },
+        {
+          "refId": "B",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "reduce",
+            "expression": "A",
+            "reducer": "last"
+          }
+        },
+        {
+          "refId": "C",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "C",
+            "type": "threshold",
+            "expression": "B",
+            "conditions": [
+              {
+                "evaluator": {
+                  "type": "gt",
+                  "params": [
+                    5
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "uid": "alm-oom",
+      "title": "Container killed for memory",
+      "condition": "C",
+      "for": "0s",
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "labels": {
+        "severity": "warning",
+        "project": "almonium"
+      },
+      "annotations": {
+        "summary": "{{ $labels.name }} was killed for running out of memory.",
+        "description": "The kernel OOM-killed a process in this container. Check its memory on the dashboard and its limits.",
+        "runbook_url": "https://almonium.grafana.net/d/almonium-overview"
+      },
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": {
+            "from": 600,
+            "to": 0
+          },
+          "datasourceUid": "grafanacloud-prom",
+          "model": {
+            "refId": "A",
+            "expr": "sum by (name) (increase(container_oom_events_total{name!=\"\"}[15m]))",
+            "instant": true,
+            "range": false
+          }
+        },
+        {
+          "refId": "B",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "reduce",
+            "expression": "A",
+            "reducer": "last"
+          }
+        },
+        {
+          "refId": "C",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "C",
+            "type": "threshold",
+            "expression": "B",
+            "conditions": [
+              {
+                "evaluator": {
+                  "type": "gt",
+                  "params": [
+                    0
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "uid": "alm-crashloop",
+      "title": "Container restarting repeatedly",
+      "condition": "C",
+      "for": "0s",
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "labels": {
+        "severity": "warning",
+        "project": "almonium"
+      },
+      "annotations": {
+        "summary": "{{ $labels.name }} started more than twice in 30 minutes.",
+        "description": "A deploy starts a slot once; repeated starts mean a crash loop. Check `docker logs {{ $labels.name }}`.",
+        "runbook_url": "https://almonium.grafana.net/d/almonium-overview"
+      },
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": {
+            "from": 600,
+            "to": 0
+          },
+          "datasourceUid": "grafanacloud-prom",
+          "model": {
+            "refId": "A",
+            "expr": "changes(container_start_time_seconds{name=~\"almonium.*|traefik_proxy|postgres|pgbouncer|rabbitmq|alloy\"}[30m])",
+            "instant": true,
+            "range": false
+          }
+        },
+        {
+          "refId": "B",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "reduce",
+            "expression": "A",
+            "reducer": "last"
+          }
+        },
+        {
+          "refId": "C",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "C",
+            "type": "threshold",
+            "expression": "B",
+            "conditions": [
+              {
+                "evaluator": {
+                  "type": "gt",
+                  "params": [
+                    2
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "uid": "alm-heap",
+      "title": "JVM heap near its limit",
+      "condition": "C",
+      "for": "15m",
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "labels": {
+        "severity": "warning",
+        "project": "almonium"
+      },
+      "annotations": {
+        "summary": "{{ $labels.env }} {{ $labels.slot }} heap above 90% for 15 minutes.",
+        "description": "Sustained high heap after GC precedes OutOfMemoryError. See Heap used vs max.",
+        "runbook_url": "https://almonium.grafana.net/d/almonium-overview"
+      },
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": {
+            "from": 600,
+            "to": 0
+          },
+          "datasourceUid": "grafanacloud-prom",
+          "model": {
+            "refId": "A",
+            "expr": "sum by (env, slot) (jvm_memory_used_bytes{area=\"heap\"}) / sum by (env, slot) (jvm_memory_max_bytes{area=\"heap\"} > 0)",
+            "instant": true,
+            "range": false
+          }
+        },
+        {
+          "refId": "B",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "reduce",
+            "expression": "A",
+            "reducer": "last"
+          }
+        },
+        {
+          "refId": "C",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "C",
+            "type": "threshold",
+            "expression": "B",
+            "conditions": [
+              {
+                "evaluator": {
+                  "type": "gt",
+                  "params": [
+                    0.9
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "uid": "alm-db-pool",
+      "title": "Requests waiting for a database connection",
+      "condition": "C",
+      "for": "5m",
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "labels": {
+        "severity": "warning",
+        "project": "almonium"
+      },
+      "annotations": {
+        "summary": "Production requests queue for a Hikari connection.",
+        "description": "The pool (max 8) is exhausted: slow queries or a leak. Compare Hikari connections with Slowest endpoints.",
+        "runbook_url": "https://almonium.grafana.net/d/almonium-overview"
+      },
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": {
+            "from": 600,
+            "to": 0
+          },
+          "datasourceUid": "grafanacloud-prom",
+          "model": {
+            "refId": "A",
+            "expr": "max(max_over_time(hikaricp_connections_pending{env=\"prod\"}[5m]))",
+            "instant": true,
+            "range": false
+          }
+        },
+        {
+          "refId": "B",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "reduce",
+            "expression": "A",
+            "reducer": "last"
+          }
+        },
+        {
+          "refId": "C",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "C",
+            "type": "threshold",
+            "expression": "B",
+            "conditions": [
+              {
+                "evaluator": {
+                  "type": "gt",
+                  "params": [
+                    0
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "uid": "alm-dead-letters",
+      "title": "Messages in a dead-letter queue",
+      "condition": "C",
+      "for": "2m",
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "labels": {
+        "severity": "warning",
+        "project": "almonium"
+      },
+      "annotations": {
+        "summary": "{{ $labels.queue }} on {{ $labels.vhost }} holds dead letters.",
+        "description": "A message failed all its retries. Read it in the RabbitMQ UI (ssh -L 15672:127.0.0.1:15672 oci) and look for the matching error in the logs.",
+        "runbook_url": "https://almonium.grafana.net/d/almonium-overview"
+      },
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": {
+            "from": 600,
+            "to": 0
+          },
+          "datasourceUid": "grafanacloud-prom",
+          "model": {
+            "refId": "A",
+            "expr": "sum by (vhost, queue) (rabbitmq_detailed_queue_messages_ready{queue=~\".*\\\\.dlq\"})",
+            "instant": true,
+            "range": false
+          }
+        },
+        {
+          "refId": "B",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "reduce",
+            "expression": "A",
+            "reducer": "last"
+          }
+        },
+        {
+          "refId": "C",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "C",
+            "type": "threshold",
+            "expression": "B",
+            "conditions": [
+              {
+                "evaluator": {
+                  "type": "gt",
+                  "params": [
+                    0
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "uid": "alm-backlog",
+      "title": "Queue backing up",
+      "condition": "C",
+      "for": "30m",
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "labels": {
+        "severity": "warning",
+        "project": "almonium"
+      },
+      "annotations": {
+        "summary": "{{ $labels.queue }} on {{ $labels.vhost }} has over 100 messages waiting for 30 minutes.",
+        "description": "Consumers are down or too slow. Check Queues without a consumer on the dashboard.",
+        "runbook_url": "https://almonium.grafana.net/d/almonium-overview"
+      },
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": {
+            "from": 600,
+            "to": 0
+          },
+          "datasourceUid": "grafanacloud-prom",
+          "model": {
+            "refId": "A",
+            "expr": "sum by (vhost, queue) (rabbitmq_detailed_queue_messages_ready{queue!~\".*\\\\.dlq\"})",
+            "instant": true,
+            "range": false
+          }
+        },
+        {
+          "refId": "B",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "reduce",
+            "expression": "A",
+            "reducer": "last"
+          }
+        },
+        {
+          "refId": "C",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "C",
+            "type": "threshold",
+            "expression": "B",
+            "conditions": [
+              {
+                "evaluator": {
+                  "type": "gt",
+                  "params": [
+                    100
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "uid": "alm-no-consumer",
+      "title": "Production queue without a consumer",
+      "condition": "C",
+      "for": "15m",
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "labels": {
+        "severity": "warning",
+        "project": "almonium"
+      },
+      "annotations": {
+        "summary": "Nothing consumes {{ $labels.queue }} on {{ $labels.vhost }}.",
+        "description": "Its listener is down; messages will pile up until it returns.",
+        "runbook_url": "https://almonium.grafana.net/d/almonium-overview"
+      },
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": {
+            "from": 600,
+            "to": 0
+          },
+          "datasourceUid": "grafanacloud-prom",
+          "model": {
+            "refId": "A",
+            "expr": "sum by (vhost, queue) (rabbitmq_detailed_queue_consumers{queue!~\".*\\\\.dlq\", vhost=~\"/almonium_prod|/almonium_books_prod\"})",
+            "instant": true,
+            "range": false
+          }
+        },
+        {
+          "refId": "B",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "reduce",
+            "expression": "A",
+            "reducer": "last"
+          }
+        },
+        {
+          "refId": "C",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "C",
+            "type": "threshold",
+            "expression": "B",
+            "conditions": [
+              {
+                "evaluator": {
+                  "type": "lt",
+                  "params": [
+                    1
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "uid": "alm-rabbit-alarm",
+      "title": "RabbitMQ resource alarm",
+      "condition": "C",
+      "for": "1m",
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "labels": {
+        "severity": "warning",
+        "project": "almonium"
+      },
+      "annotations": {
+        "summary": "RabbitMQ raised a memory, disk or file-descriptor alarm.",
+        "description": "While an alarm is raised RabbitMQ blocks every publisher.",
+        "runbook_url": "https://almonium.grafana.net/d/almonium-overview"
+      },
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": {
+            "from": 600,
+            "to": 0
+          },
+          "datasourceUid": "grafanacloud-prom",
+          "model": {
+            "refId": "A",
+            "expr": "max(rabbitmq_alarms_memory_used_watermark + rabbitmq_alarms_free_disk_space_watermark + rabbitmq_alarms_file_descriptor_limit)",
+            "instant": true,
+            "range": false
+          }
+        },
+        {
+          "refId": "B",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "reduce",
+            "expression": "A",
+            "reducer": "last"
+          }
+        },
+        {
+          "refId": "C",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "C",
+            "type": "threshold",
+            "expression": "B",
+            "conditions": [
+              {
+                "evaluator": {
+                  "type": "gt",
+                  "params": [
+                    0
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "uid": "alm-tls",
+      "title": "TLS certificate expiring",
+      "condition": "C",
+      "for": "1h",
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "labels": {
+        "severity": "warning",
+        "project": "almonium"
+      },
+      "annotations": {
+        "summary": "The certificate for {{ $labels.instance }} expires in under 14 days.",
+        "description": "Traefik renews at about 30 days; still being close to expiry means renewal fails. Check Traefik's logs for porkbun DNS-01 errors.",
+        "runbook_url": "https://almonium.grafana.net/d/almonium-overview"
+      },
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": {
+            "from": 600,
+            "to": 0
+          },
+          "datasourceUid": "grafanacloud-prom",
+          "model": {
+            "refId": "A",
+            "expr": "min by (instance) (probe_ssl_earliest_cert_expiry - time()) / 86400",
+            "instant": true,
+            "range": false
+          }
+        },
+        {
+          "refId": "B",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "reduce",
+            "expression": "A",
+            "reducer": "last"
+          }
+        },
+        {
+          "refId": "C",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "C",
+            "type": "threshold",
+            "expression": "B",
+            "conditions": [
+              {
+                "evaluator": {
+                  "type": "lt",
+                  "params": [
+                    14
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "uid": "alm-staging-down",
+      "title": "Staging backend down",
+      "condition": "C",
+      "for": "15m",
+      "noDataState": "Alerting",
+      "execErrState": "Error",
+      "labels": {
+        "severity": "warning",
+        "project": "almonium"
+      },
+      "annotations": {
+        "summary": "No staging backend slot answers.",
+        "description": "Staging has been down for 15 minutes.",
+        "runbook_url": "https://almonium.grafana.net/d/almonium-overview"
+      },
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": {
+            "from": 600,
+            "to": 0
+          },
+          "datasourceUid": "grafanacloud-prom",
+          "model": {
+            "refId": "A",
+            "expr": "sum(up{job=\"almonium-be\", env=\"staging\"}) or vector(0)",
+            "instant": true,
+            "range": false
+          }
+        },
+        {
+          "refId": "B",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "reduce",
+            "expression": "A",
+            "reducer": "last"
+          }
+        },
+        {
+          "refId": "C",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "C",
+            "type": "threshold",
+            "expression": "B",
+            "conditions": [
+              {
+                "evaluator": {
+                  "type": "lt",
+                  "params": [
+                    1
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,379 @@
+{
+  "title": "almonium-critical",
+  "folderUid": "almonium",
+  "interval": 60,
+  "rules": [
+    {
+      "uid": "alm-backend-down",
+      "title": "Production backend down",
+      "condition": "C",
+      "for": "3m",
+      "noDataState": "Alerting",
+      "execErrState": "Error",
+      "labels": {
+        "severity": "critical",
+        "project": "almonium"
+      },
+      "annotations": {
+        "summary": "No production backend slot answers.",
+        "description": "Neither blue nor green prod slot answered Alloy's metrics scrape for 3 minutes. Check `docker ps` on the host and the latest deploy run.",
+        "runbook_url": "https://almonium.grafana.net/d/almonium-overview"
+      },
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": {
+            "from": 600,
+            "to": 0
+          },
+          "datasourceUid": "grafanacloud-prom",
+          "model": {
+            "refId": "A",
+            "expr": "sum(up{job=\"almonium-be\", env=\"prod\"}) or vector(0)",
+            "instant": true,
+            "range": false
+          }
+        },
+        {
+          "refId": "B",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "reduce",
+            "expression": "A",
+            "reducer": "last"
+          }
+        },
+        {
+          "refId": "C",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "C",
+            "type": "threshold",
+            "expression": "B",
+            "conditions": [
+              {
+                "evaluator": {
+                  "type": "lt",
+                  "params": [
+                    1
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "uid": "alm-site-down",
+      "title": "Public endpoint failing",
+      "condition": "C",
+      "for": "5m",
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "labels": {
+        "severity": "critical",
+        "project": "almonium"
+      },
+      "annotations": {
+        "summary": "{{ $labels.job }} fails from outside.",
+        "description": "Synthetic checks against {{ $labels.instance }} failed more than half the time over 10 minutes. Users likely cannot reach it.",
+        "runbook_url": "https://almonium.grafana.net/d/almonium-overview"
+      },
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": {
+            "from": 600,
+            "to": 0
+          },
+          "datasourceUid": "grafanacloud-prom",
+          "model": {
+            "refId": "A",
+            "expr": "avg by (job, instance) (avg_over_time(probe_success{env=\"prod\"}[10m]))",
+            "instant": true,
+            "range": false
+          }
+        },
+        {
+          "refId": "B",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "reduce",
+            "expression": "A",
+            "reducer": "last"
+          }
+        },
+        {
+          "refId": "C",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "C",
+            "type": "threshold",
+            "expression": "B",
+            "conditions": [
+              {
+                "evaluator": {
+                  "type": "lt",
+                  "params": [
+                    0.5
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "uid": "alm-telemetry-silent",
+      "title": "Host telemetry stopped",
+      "condition": "C",
+      "for": "10m",
+      "noDataState": "Alerting",
+      "execErrState": "Error",
+      "labels": {
+        "severity": "critical",
+        "project": "almonium"
+      },
+      "annotations": {
+        "summary": "No host metrics for 10 minutes.",
+        "description": "Alloy stopped reporting: the host is down, Alloy crashed, or its Grafana Cloud token was revoked. Every other alert is blind until this clears.",
+        "runbook_url": "https://almonium.grafana.net/d/almonium-overview"
+      },
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": {
+            "from": 600,
+            "to": 0
+          },
+          "datasourceUid": "grafanacloud-prom",
+          "model": {
+            "refId": "A",
+            "expr": "count(up{job=\"integrations/unix\"} == 1) or vector(0)",
+            "instant": true,
+            "range": false
+          }
+        },
+        {
+          "refId": "B",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "reduce",
+            "expression": "A",
+            "reducer": "last"
+          }
+        },
+        {
+          "refId": "C",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "C",
+            "type": "threshold",
+            "expression": "B",
+            "conditions": [
+              {
+                "evaluator": {
+                  "type": "lt",
+                  "params": [
+                    1
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "uid": "alm-5xx",
+      "title": "Production 5xx rate high",
+      "condition": "C",
+      "for": "5m",
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "labels": {
+        "severity": "critical",
+        "project": "almonium"
+      },
+      "annotations": {
+        "summary": "More than 5% of production requests fail with 5xx.",
+        "description": "See the Failing endpoints table and Backend errors logs on the Almonium overview dashboard.",
+        "runbook_url": "https://almonium.grafana.net/d/almonium-overview"
+      },
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": {
+            "from": 600,
+            "to": 0
+          },
+          "datasourceUid": "grafanacloud-prom",
+          "model": {
+            "refId": "A",
+            "expr": "(sum(rate(http_server_requests_seconds_count{env=\"prod\", status=~\"5..\"}[5m])) / sum(rate(http_server_requests_seconds_count{env=\"prod\"}[5m]))) and on() (sum(rate(http_server_requests_seconds_count{env=\"prod\", status=~\"5..\"}[5m])) > 0.02)",
+            "instant": true,
+            "range": false
+          }
+        },
+        {
+          "refId": "B",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "reduce",
+            "expression": "A",
+            "reducer": "last"
+          }
+        },
+        {
+          "refId": "C",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "C",
+            "type": "threshold",
+            "expression": "B",
+            "conditions": [
+              {
+                "evaluator": {
+                  "type": "gt",
+                  "params": [
+                    0.05
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "uid": "alm-disk",
+      "title": "Host disk almost full",
+      "condition": "C",
+      "for": "10m",
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "labels": {
+        "severity": "critical",
+        "project": "almonium"
+      },
+      "annotations": {
+        "summary": "Less than 15% disk left on the host.",
+        "description": "PostgreSQL, RabbitMQ and Docker all write to /. Check `docker system df`, /opt/db/backups and the media paths.",
+        "runbook_url": "https://almonium.grafana.net/d/almonium-overview"
+      },
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": {
+            "from": 600,
+            "to": 0
+          },
+          "datasourceUid": "grafanacloud-prom",
+          "model": {
+            "refId": "A",
+            "expr": "min(node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"})",
+            "instant": true,
+            "range": false
+          }
+        },
+        {
+          "refId": "B",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "reduce",
+            "expression": "A",
+            "reducer": "last"
+          }
+        },
+        {
+          "refId": "C",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "C",
+            "type": "threshold",
+            "expression": "B",
+            "conditions": [
+              {
+                "evaluator": {
+                  "type": "lt",
+                  "params": [
+                    0.15
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "uid": "alm-memory",
+      "title": "Host memory almost exhausted",
+      "condition": "C",
+      "for": "10m",
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "labels": {
+        "severity": "critical",
+        "project": "almonium"
+      },
+      "annotations": {
+        "summary": "Less than 8% memory available on the host.",
+        "description": "The host has no swap, so the kernel will start killing containers. See Memory by container on the dashboard.",
+        "runbook_url": "https://almonium.grafana.net/d/almonium-overview"
+      },
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": {
+            "from": 600,
+            "to": 0
+          },
+          "datasourceUid": "grafanacloud-prom",
+          "model": {
+            "refId": "A",
+            "expr": "min(node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)",
+            "instant": true,
+            "range": false
+          }
+        },
+        {
+          "refId": "B",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "reduce",
+            "expression": "A",
+            "reducer": "last"
+          }
+        },
+        {
+          "refId": "C",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "C",
+            "type": "threshold",
+            "expression": "B",
+            "conditions": [
+              {
+                "evaluator": {
+                  "type": "lt",
+                  "params": [
+                    0.08
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

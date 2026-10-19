@@ -1,0 +1,10 @@
+{
+  "uid": "almonium-email",
+  "name": "Almonium email",
+  "type": "email",
+  "settings": {
+    "addresses": "tech@almonium.com",
+    "singleEmail": true
+  },
+  "disableResolveMessage": false
+}
