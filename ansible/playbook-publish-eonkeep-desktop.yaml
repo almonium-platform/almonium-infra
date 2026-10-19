@@ -1,6 +1,6 @@
 # Publishes EonKeep desktop builds to eonkeep.almonium.com/downloads. Invoked by the
 # EonKeep repository's release workflow with release_src pointing at a local folder
-# that holds the bundles and latest.json.
+# that holds the bundles, latest.json and (for the in-app updater) update.json.
 - name: Publish EonKeep desktop release
   hosts: almonium
   gather_facts: false
@@ -38,6 +38,14 @@
         src: "{{ release_src }}/latest.json"
         dest: "{{ eonkeep.shared.downloads_dir }}/latest.json"
         mode: "0644"
+
+    # The in-app updater's feed: signed per bundle, so it only names uploaded files.
+    - name: Publish the update feed
+      ansible.builtin.copy:
+        src: "{{ release_src }}/update.json"
+        dest: "{{ eonkeep.shared.downloads_dir }}/update.json"
+        mode: "0644"
+      when: (release_src ~ '/update.json') is file
 
     - name: Find published bundles
       ansible.builtin.find:
