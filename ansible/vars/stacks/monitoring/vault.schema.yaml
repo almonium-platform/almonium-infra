@@ -1,3 +1,6 @@
 # Grafana Cloud access-policy token "alloy-almonium-host": scopes metrics:write
 # and logs:write on the almonium stack, nothing else.
 monitoring_grafana_cloud_token: ""
+# Password of the Postgres role postgres_monitoring_role; same value as
+# postgres_monitoring_password in the DB vault.
+monitoring_postgres_password: ""

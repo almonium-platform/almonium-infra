@@ -374,6 +374,68 @@
           }
         }
       ]
+    },
+    {
+      "uid": "alm-postgres-down",
+      "title": "PostgreSQL down",
+      "condition": "C",
+      "for": "3m",
+      "noDataState": "Alerting",
+      "execErrState": "Error",
+      "labels": {
+        "severity": "critical",
+        "project": "almonium"
+      },
+      "annotations": {
+        "summary": "PostgreSQL is not answering.",
+        "description": "Alloy's collector could not log in to PostgreSQL for 3 minutes, so every tenant's database is likely unreachable. Check `docker ps` for the postgres container on the host. If only this alert fires and the apps work, the `monitoring` role's login is broken (Deploy Postgres DB re-creates it).",
+        "runbook_url": "https://almonium.grafana.net/d/almonium-overview"
+      },
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": {
+            "from": 600,
+            "to": 0
+          },
+          "datasourceUid": "grafanacloud-prom",
+          "model": {
+            "refId": "A",
+            "expr": "max(pg_up) or vector(0)",
+            "instant": true,
+            "range": false
+          }
+        },
+        {
+          "refId": "B",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "reduce",
+            "expression": "A",
+            "reducer": "last"
+          }
+        },
+        {
+          "refId": "C",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "C",
+            "type": "threshold",
+            "expression": "B",
+            "conditions": [
+              {
+                "evaluator": {
+                  "type": "lt",
+                  "params": [
+                    1
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
     }
   ]
 }

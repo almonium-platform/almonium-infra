@@ -161,18 +161,29 @@ an upsert, and resources stay editable in the UI; export UI edits back here):
 
 - `dashboards/almonium-overview.json`: HTTP traffic, latency and failing
   endpoints, backend and Books error logs, JVM and connection pool, host,
-  per-container memory/CPU/restarts, RabbitMQ queues and dead letters, and
-  outside-in uptime with TLS expiry;
-- `alerting/`: 18 rules in folder Almonium (critical: prod backend down,
-  public endpoint failing, telemetry silent, 5xx rate, disk, memory; warning:
-  error logs, OOM kills, crash loops, heap, DB pool waits, dead letters,
-  backlog, missing consumers, RabbitMQ alarms, TLS expiry, staging down), sent
+  PostgreSQL (connections, sizes, transactions, oldest open transaction, cache
+  hits, deadlocks), host, per-container memory/CPU/restarts, RabbitMQ queues
+  and dead letters, and outside-in uptime with TLS expiry;
+- `alerting/`: 22 rules in folder Almonium (critical: prod backend down,
+  public endpoint failing, telemetry silent, 5xx rate, disk, memory,
+  PostgreSQL down; warning: error logs, OOM kills, crash loops, heap, DB pool
+  waits, dead letters, backlog, missing consumers, RabbitMQ alarms, TLS expiry,
+  staging down, PostgreSQL connections, long transactions, deadlocks), sent
   by email to tech@almonium.com (critical repeats every 2 h, warnings 12 h).
 
 Synthetic Monitoring probes the public URLs from Frankfurt (and London for the
 production API): `api`, `almonium.com`, `books` and the staging API, about
 65k of the free tier's 100k monthly executions. The checks live in Grafana
 (Testing & synthetics > Synthetics), not in this repository.
+
+PostgreSQL statistics come from Alloy's built-in collector, logged in as the
+role `monitoring` (`postgres_monitoring_role` in the DB vars). It holds
+`pg_monitor`, which reads server statistics and database sizes but no table
+data, and connects only to the maintenance database `postgres`. The **Deploy
+Postgres DB** workflow creates the role; its password is in both the DB vault
+(`postgres_monitoring_password`) and the monitoring vault
+(`monitoring_postgres_password`), with the same value. To rotate it, change
+both, then run both deploy workflows.
 
 The write token (`monitoring_grafana_cloud_token`, scopes `metrics:write` and
 `logs:write` only) lives in `ansible/vars/stacks/monitoring/vault.yaml` under

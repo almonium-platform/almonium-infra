@@ -7,6 +7,11 @@
     name: almonium
     file: "{{ playbook_dir }}/vars/apps/almonium/vars.yaml"
 
+- name: Load DB stack vars
+  ansible.builtin.include_vars:
+    name: db
+    file: "{{ playbook_dir }}/vars/stacks/db/vars.yaml"
+
 - name: Load monitoring stack secrets
   ansible.builtin.include_vars:
     file: "{{ playbook_dir }}/vars/stacks/monitoring/vault.yaml"
@@ -16,7 +21,11 @@
     that:
       - monitoring_grafana_cloud_token is defined
       - monitoring_grafana_cloud_token | string | length > 0
-    fail_msg: "monitoring_grafana_cloud_token must be defined in the monitoring vault."
+      - monitoring_postgres_password is defined
+      - monitoring_postgres_password is match('^[A-Za-z0-9]+$')
+    fail_msg: >-
+      monitoring_grafana_cloud_token and monitoring_postgres_password (alphanumeric, it goes
+      into a connection URL) must be defined in the monitoring vault.
 
 - name: Ensure monitoring stack dir exists
   ansible.builtin.file:
@@ -27,7 +36,9 @@
 - name: Write Alloy credentials
   ansible.builtin.copy:
     dest: /opt/monitoring/alloy.env
-    content: "GRAFANA_CLOUD_TOKEN={{ monitoring_grafana_cloud_token }}\n"
+    content: |
+      GRAFANA_CLOUD_TOKEN={{ monitoring_grafana_cloud_token }}
+      POSTGRES_MONITORING_PASSWORD={{ monitoring_postgres_password }}
     owner: root
     group: root
     mode: "0600"

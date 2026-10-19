@@ -745,6 +745,192 @@
           }
         }
       ]
+    },
+    {
+      "uid": "alm-postgres-connections",
+      "title": "PostgreSQL connections near the limit",
+      "condition": "C",
+      "for": "5m",
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "labels": {
+        "severity": "warning",
+        "project": "almonium"
+      },
+      "annotations": {
+        "summary": "PostgreSQL is using over 80% of max_connections.",
+        "description": "New connections will soon be refused for every tenant. See which database holds them on the dashboard's PostgreSQL row; an app bypassing PgBouncer or leaking connections is the usual cause.",
+        "runbook_url": "https://almonium.grafana.net/d/almonium-overview"
+      },
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": {
+            "from": 600,
+            "to": 0
+          },
+          "datasourceUid": "grafanacloud-prom",
+          "model": {
+            "refId": "A",
+            "expr": "sum(pg_stat_database_numbackends) / max(pg_settings_max_connections)",
+            "instant": true,
+            "range": false
+          }
+        },
+        {
+          "refId": "B",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "reduce",
+            "expression": "A",
+            "reducer": "last"
+          }
+        },
+        {
+          "refId": "C",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "C",
+            "type": "threshold",
+            "expression": "B",
+            "conditions": [
+              {
+                "evaluator": {
+                  "type": "gt",
+                  "params": [
+                    0.8
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "uid": "alm-postgres-long-transaction",
+      "title": "PostgreSQL transaction open for over 30 minutes",
+      "condition": "C",
+      "for": "5m",
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "labels": {
+        "severity": "warning",
+        "project": "almonium"
+      },
+      "annotations": {
+        "summary": "A PostgreSQL transaction has been open for over 30 minutes.",
+        "description": "Long transactions block vacuum and can hold locks. Find it with `SELECT pid, datname, usename, state, now() - xact_start AS age, query FROM pg_stat_activity ORDER BY xact_start NULLS LAST LIMIT 5;` as the postgres admin, and `pg_terminate_backend(pid)` if it is stuck.",
+        "runbook_url": "https://almonium.grafana.net/d/almonium-overview"
+      },
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": {
+            "from": 600,
+            "to": 0
+          },
+          "datasourceUid": "grafanacloud-prom",
+          "model": {
+            "refId": "A",
+            "expr": "max(pg_stat_activity_max_tx_duration{datname!=\"\"})",
+            "instant": true,
+            "range": false
+          }
+        },
+        {
+          "refId": "B",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "reduce",
+            "expression": "A",
+            "reducer": "last"
+          }
+        },
+        {
+          "refId": "C",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "C",
+            "type": "threshold",
+            "expression": "B",
+            "conditions": [
+              {
+                "evaluator": {
+                  "type": "gt",
+                  "params": [
+                    1800
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "uid": "alm-postgres-deadlocks",
+      "title": "PostgreSQL deadlocks",
+      "condition": "C",
+      "for": "0s",
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "labels": {
+        "severity": "warning",
+        "project": "almonium"
+      },
+      "annotations": {
+        "summary": "PostgreSQL detected a deadlock in the last 15 minutes.",
+        "description": "Two transactions waited on each other and Postgres aborted one. The PostgreSQL container's log (Logs row, app=postgres) names the queries involved.",
+        "runbook_url": "https://almonium.grafana.net/d/almonium-overview"
+      },
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": {
+            "from": 600,
+            "to": 0
+          },
+          "datasourceUid": "grafanacloud-prom",
+          "model": {
+            "refId": "A",
+            "expr": "sum(increase(pg_stat_database_deadlocks[15m])) or vector(0)",
+            "instant": true,
+            "range": false
+          }
+        },
+        {
+          "refId": "B",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "reduce",
+            "expression": "A",
+            "reducer": "last"
+          }
+        },
+        {
+          "refId": "C",
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "C",
+            "type": "threshold",
+            "expression": "B",
+            "conditions": [
+              {
+                "evaluator": {
+                  "type": "gt",
+                  "params": [
+                    0
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
     }
   ]
 }

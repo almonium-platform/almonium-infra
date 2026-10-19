@@ -1337,6 +1337,438 @@
     },
     {
       "type": "row",
+      "title": "PostgreSQL (whole server, every tenant)",
+      "id": 47,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 55
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Postgres up",
+      "id": 48,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "grafanacloud-prom"
+      },
+      "description": "Alloy's collector logs in as the read-only `monitoring` role. 0 means the server is down or refuses that login.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "grafanacloud-prom"
+          },
+          "expr": "max(pg_up) or vector(0)",
+          "legendFormat": "",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "value"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 4,
+        "x": 0,
+        "y": 56
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Connections used",
+      "id": 49,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "grafanacloud-prom"
+      },
+      "description": "Open connections across all databases as a share of max_connections (200). PgBouncer pools the apps' connections, so this should stay low.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "grafanacloud-prom"
+          },
+          "expr": "sum(pg_stat_database_numbackends) / max(pg_settings_max_connections)",
+          "legendFormat": "",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.6
+              },
+              {
+                "color": "red",
+                "value": 0.8
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "value"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 4,
+        "x": 4,
+        "y": 56
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Connections by database",
+      "id": 50,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "grafanacloud-prom"
+      },
+      "description": "Server-side connections per database (after PgBouncer).",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "grafanacloud-prom"
+          },
+          "expr": "sum by (datname) (pg_stat_database_numbackends{datname!=\"\"})",
+          "legendFormat": "{{datname}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "normal"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 56
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Database size",
+      "id": 51,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "grafanacloud-prom"
+      },
+      "description": "On-disk size of each database.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "grafanacloud-prom"
+          },
+          "expr": "max by (datname) (pg_database_size_bytes)",
+          "legendFormat": "{{datname}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 56
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Transactions / s by database",
+      "id": 52,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "grafanacloud-prom"
+      },
+      "description": "Committed transactions per second.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "grafanacloud-prom"
+          },
+          "expr": "sum by (datname) (rate(pg_stat_database_xact_commit{datname!=\"\"}[5m]))",
+          "legendFormat": "{{datname}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "normal"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 0,
+        "y": 63
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Oldest open transaction",
+      "id": 53,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "grafanacloud-prom"
+      },
+      "description": "Age of the longest-running transaction per database. A transaction left open for minutes blocks vacuum and can hold locks other queries wait on.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "grafanacloud-prom"
+          },
+          "expr": "max by (datname) (pg_stat_activity_max_tx_duration{datname!=\"\"})",
+          "legendFormat": "{{datname}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 6,
+        "y": 63
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Cache hit ratio",
+      "id": 54,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "grafanacloud-prom"
+      },
+      "description": "Share of block reads served from shared buffers rather than disk. Under ~0.95 on a busy database means it no longer fits in memory.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "grafanacloud-prom"
+          },
+          "expr": "sum by (datname) (rate(pg_stat_database_blks_hit{datname!=\"\"}[15m])) / clamp_min(sum by (datname) (rate(pg_stat_database_blks_hit{datname!=\"\"}[15m]) + rate(pg_stat_database_blks_read{datname!=\"\"}[15m])), 1e-9)",
+          "legendFormat": "{{datname}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "fillOpacity": 10,
+            "showPoints": "never"
+          },
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 12,
+        "y": 63
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Deadlocks and rollbacks / 5 min",
+      "id": 55,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "grafanacloud-prom"
+      },
+      "description": "Deadlocks are always a bug; rollbacks include ordinary failed requests.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "grafanacloud-prom"
+          },
+          "expr": "sum by (datname) (increase(pg_stat_database_deadlocks{datname!=\"\"}[5m]))",
+          "legendFormat": "deadlocks {{datname}}"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "grafanacloud-prom"
+          },
+          "expr": "sum by (datname) (increase(pg_stat_database_xact_rollback{datname!=\"\"}[5m]))",
+          "legendFormat": "rollbacks {{datname}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 18,
+        "y": 63
+      }
+    },
+    {
+      "type": "row",
       "title": "Host (shared Oracle ARM box)",
       "id": 27,
       "collapsed": false,
@@ -1344,7 +1776,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 55
+        "y": 70
       },
       "panels": []
     },
@@ -1397,7 +1829,7 @@
         "h": 7,
         "w": 6,
         "x": 0,
-        "y": 56
+        "y": 71
       }
     },
     {
@@ -1457,7 +1889,7 @@
         "h": 7,
         "w": 6,
         "x": 6,
-        "y": 56
+        "y": 71
       }
     },
     {
@@ -1508,7 +1940,7 @@
         "h": 7,
         "w": 6,
         "x": 12,
-        "y": 56
+        "y": 71
       }
     },
     {
@@ -1577,7 +2009,7 @@
         "h": 7,
         "w": 6,
         "x": 18,
-        "y": 56
+        "y": 71
       }
     },
     {
@@ -1589,7 +2021,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 63
+        "y": 78
       },
       "panels": []
     },
@@ -1640,7 +2072,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 64
+        "y": 79
       }
     },
     {
@@ -1690,7 +2122,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 64
+        "y": 79
       }
     },
     {
@@ -1758,7 +2190,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 72
+        "y": 87
       }
     },
     {
@@ -1826,7 +2258,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 72
+        "y": 87
       }
     },
     {
@@ -1838,7 +2270,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 79
+        "y": 94
       },
       "panels": []
     },
@@ -1889,7 +2321,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 80
+        "y": 95
       }
     },
     {
@@ -1939,7 +2371,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 80
+        "y": 95
       }
     },
     {
@@ -2007,7 +2439,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 80
+        "y": 95
       }
     },
     {
@@ -2075,7 +2507,7 @@
         "h": 6,
         "w": 12,
         "x": 0,
-        "y": 88
+        "y": 103
       }
     },
     {
@@ -2143,7 +2575,7 @@
         "h": 6,
         "w": 12,
         "x": 12,
-        "y": 88
+        "y": 103
       }
     },
     {
@@ -2155,7 +2587,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 94
+        "y": 109
       },
       "panels": []
     },
@@ -2208,7 +2640,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 95
+        "y": 110
       }
     },
     {
@@ -2259,7 +2691,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 95
+        "y": 110
       }
     },
     {
@@ -2327,7 +2759,7 @@
         "h": 5,
         "w": 24,
         "x": 0,
-        "y": 102
+        "y": 117
       }
     }
   ]

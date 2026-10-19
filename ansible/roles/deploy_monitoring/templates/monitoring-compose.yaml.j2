@@ -24,9 +24,11 @@ services:
     ports:
       - "127.0.0.1:12345:12345"
     networks:
-      # proxy-net reaches the backend slots, broker-net reaches RabbitMQ.
+      # proxy-net reaches the backend slots, broker-net reaches RabbitMQ,
+      # db-net reaches PostgreSQL.
       - proxy-net
       - broker-net
+      - db-net
     restart: unless-stopped
 
 volumes:
@@ -36,4 +38,6 @@ networks:
   proxy-net:
     external: true
   broker-net:
+    external: true
+  db-net:
     external: true

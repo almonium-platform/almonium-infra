@@ -1,6 +1,6 @@
 // Grafana Alloy on the shared host: host and container metrics, the Almonium
 // backend's Micrometer metrics, RabbitMQ metrics, and every container's logs,
-// all shipped to Grafana Cloud. The free tier allows 10k active series, so
+// PostgreSQL server statistics, all shipped to Grafana Cloud. The free tier allows 10k active series, so
 // each source keeps only what the dashboards and alerts use.
 
 logging {
@@ -265,6 +265,52 @@ prometheus.relabel "rabbitmq_queues" {
   rule {
     source_labels = ["queue"]
     regex         = "celeryev\\..*|.*\\.pidbox|amq\\.gen-.*|spring\\.gen-.*"
+    action        = "drop"
+  }
+}
+
+// ---------------------------------------------------------------- PostgreSQL
+
+// Server-wide statistics through the read-only `{{ db.postgres_monitoring_role }}` role (pg_monitor):
+// every database's size, connections, transactions, deadlocks and locks are
+// visible from the maintenance database, so one connection covers all tenants.
+prometheus.exporter.postgres "db" {
+  data_source_names = [
+    "postgresql://{{ db.postgres_monitoring_role }}:" + sys.env("POSTGRES_MONITORING_PASSWORD") + "@postgres:5432/postgres?sslmode=disable",
+  ]
+  enabled_collectors = ["database", "locks", "long_running_transactions", "postmaster", "stat_database"]
+}
+
+discovery.relabel "postgres" {
+  targets = prometheus.exporter.postgres.db.targets
+
+  rule {
+    target_label = "instance"
+    replacement  = "postgres"
+  }
+}
+
+prometheus.scrape "postgres" {
+  targets         = discovery.relabel.postgres.output
+  job_name        = "integrations/postgres"
+  scrape_interval = "60s"
+  forward_to      = [prometheus.relabel.postgres.receiver]
+}
+
+// The exporter also reports every pg_settings value and per-table statistics
+// of the maintenance database; keep what the dashboard and alerts read.
+prometheus.relabel "postgres" {
+  forward_to = [prometheus.remote_write.cloud.receiver]
+
+  rule {
+    source_labels = ["__name__"]
+    regex         = "pg_up|pg_settings_max_connections|pg_postmaster_start_time_seconds|pg_database_size_bytes|pg_locks_count|pg_stat_activity_count|pg_stat_activity_max_tx_duration|pg_long_running_transactions(_oldest_timestamp_seconds)?|pg_stat_database_(numbackends|xact_commit|xact_rollback|deadlocks|blks_hit|blks_read|temp_bytes|conflicts)"
+    action        = "keep"
+  }
+
+  rule {
+    source_labels = ["datname"]
+    regex         = "template0|template1"
     action        = "drop"
   }
 }
