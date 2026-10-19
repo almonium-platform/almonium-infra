@@ -1,15 +1,15 @@
-# Publishes EonKeep desktop builds to eonkeep.almonium.com/downloads. Invoked by the
-# EonKeep repository's release workflow with release_src pointing at a local folder
+# Publishes Secundor desktop builds to secundor.almonium.com/downloads. Invoked by the
+# Secundor repository's release workflow with release_src pointing at a local folder
 # that holds the bundles, latest.json and (for the in-app updater) update.json.
-- name: Publish EonKeep desktop release
+- name: Publish Secundor desktop release
   hosts: almonium
   gather_facts: false
 
   pre_tasks:
-    - name: Load EonKeep app vars
+    - name: Load Secundor app vars
       ansible.builtin.include_vars:
-        name: eonkeep
-        file: "{{ playbook_dir }}/vars/apps/eonkeep/vars.yaml"
+        name: secundor
+        file: "{{ playbook_dir }}/vars/apps/secundor/vars.yaml"
 
     - name: Require a release folder
       ansible.builtin.assert:
@@ -21,14 +21,14 @@
   tasks:
     - name: Ensure the downloads directory exists
       ansible.builtin.file:
-        path: "{{ eonkeep.shared.downloads_dir }}"
+        path: "{{ secundor.shared.downloads_dir }}"
         state: directory
         mode: "0755"
 
     - name: Upload bundles
       ansible.builtin.copy:
         src: "{{ item }}"
-        dest: "{{ eonkeep.shared.downloads_dir }}/"
+        dest: "{{ secundor.shared.downloads_dir }}/"
         mode: "0644"
       loop: "{{ query('fileglob', release_src ~ '/*.deb') + query('fileglob', release_src ~ '/*.AppImage') }}"
 
@@ -36,20 +36,20 @@
     - name: Publish the manifest
       ansible.builtin.copy:
         src: "{{ release_src }}/latest.json"
-        dest: "{{ eonkeep.shared.downloads_dir }}/latest.json"
+        dest: "{{ secundor.shared.downloads_dir }}/latest.json"
         mode: "0644"
 
     # The in-app updater's feed: signed per bundle, so it only names uploaded files.
     - name: Publish the update feed
       ansible.builtin.copy:
         src: "{{ release_src }}/update.json"
-        dest: "{{ eonkeep.shared.downloads_dir }}/update.json"
+        dest: "{{ secundor.shared.downloads_dir }}/update.json"
         mode: "0644"
       when: (release_src ~ '/update.json') is file
 
     - name: Find published bundles
       ansible.builtin.find:
-        paths: "{{ eonkeep.shared.downloads_dir }}"
+        paths: "{{ secundor.shared.downloads_dir }}"
         patterns: ["*.deb", "*.AppImage"]
       register: bundles
 
@@ -57,6 +57,6 @@
       ansible.builtin.file:
         path: "{{ item.path }}"
         state: absent
-      loop: "{{ (bundles.files | sort(attribute='mtime', reverse=true))[eonkeep.shared.keep_releases * 2:] }}"
+      loop: "{{ (bundles.files | sort(attribute='mtime', reverse=true))[secundor.shared.keep_releases * 2:] }}"
       loop_control:
         label: "{{ item.path | basename }}"

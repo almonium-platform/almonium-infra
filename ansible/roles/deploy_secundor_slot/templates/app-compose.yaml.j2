@@ -1,0 +1,64 @@
+services:
+  app:
+    image: "{{ secundor.shared.image }}:{{ deploy_image_tag }}"
+    container_name: "secundor_{{ deploy_environment }}_{{ deploy_slot }}"
+    environment:
+      PORT: "{{ app_internal_port }}"
+      DB_HOST: "{{ platform.db.host }}"
+      DB_PORT: "{{ platform.db.port }}"
+      DB_NAME: "{{ app_cfg.db.name }}"
+      DB_USERNAME: "{{ app_cfg.db.username }}"
+      DB_PASSWORD: "{{ secundor_env.db.password }}"
+      KEEP_VERSIONS: "{{ secundor.shared.keep_versions }}"
+      MAX_BLOB_BYTES: "{{ secundor.shared.max_blob_bytes }}"
+      RUST_LOG: "info"
+      DOWNLOADS_DIR: "/app/downloads"
+
+    volumes:
+      - "{{ secundor.shared.downloads_dir }}:/app/downloads:ro"
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy-net"
+      - "traefik.http.services.secundor-{{ deploy_environment }}-{{ deploy_slot }}.loadbalancer.server.port={{ app_internal_port }}"
+      - "traefik.http.routers.secundor-{{ deploy_environment }}-{{ deploy_slot }}.rule=Host(`{{ app_cfg.hostname }}`)"
+      - "traefik.http.routers.secundor-{{ deploy_environment }}-{{ deploy_slot }}.entrypoints=websecure"
+      - "traefik.http.routers.secundor-{{ deploy_environment }}-{{ deploy_slot }}.tls=true"
+      - "traefik.http.routers.secundor-{{ deploy_environment }}-{{ deploy_slot }}.tls.certresolver=porkbun"
+      - "traefik.http.routers.secundor-{{ deploy_environment }}-{{ deploy_slot }}.service=secundor-{{ deploy_environment }}-{{ deploy_slot }}"
+      - "traefik.http.routers.secundor-{{ deploy_environment }}-{{ deploy_slot }}.priority=100"
+{% if app_cfg.legacy_hostname is defined %}
+      # Old clients keep using the API and update feed on the legacy hostname.
+      - "traefik.http.routers.secundor-{{ deploy_environment }}-{{ deploy_slot }}-legacy.rule=Host(`{{ app_cfg.legacy_hostname }}`) && (PathPrefix(`/api/`) || PathPrefix(`/downloads/`))"
+      - "traefik.http.routers.secundor-{{ deploy_environment }}-{{ deploy_slot }}-legacy.entrypoints=websecure"
+      - "traefik.http.routers.secundor-{{ deploy_environment }}-{{ deploy_slot }}-legacy.tls=true"
+      - "traefik.http.routers.secundor-{{ deploy_environment }}-{{ deploy_slot }}-legacy.tls.certresolver=porkbun"
+      - "traefik.http.routers.secundor-{{ deploy_environment }}-{{ deploy_slot }}-legacy.service=secundor-{{ deploy_environment }}-{{ deploy_slot }}"
+      - "traefik.http.routers.secundor-{{ deploy_environment }}-{{ deploy_slot }}-legacy.priority=110"
+      # Everything else there moves to the new name.
+      - "traefik.http.routers.secundor-{{ deploy_environment }}-{{ deploy_slot }}-legacy-site.rule=Host(`{{ app_cfg.legacy_hostname }}`)"
+      - "traefik.http.routers.secundor-{{ deploy_environment }}-{{ deploy_slot }}-legacy-site.entrypoints=websecure"
+      - "traefik.http.routers.secundor-{{ deploy_environment }}-{{ deploy_slot }}-legacy-site.tls=true"
+      - "traefik.http.routers.secundor-{{ deploy_environment }}-{{ deploy_slot }}-legacy-site.tls.certresolver=porkbun"
+      - "traefik.http.routers.secundor-{{ deploy_environment }}-{{ deploy_slot }}-legacy-site.service=secundor-{{ deploy_environment }}-{{ deploy_slot }}"
+      - "traefik.http.routers.secundor-{{ deploy_environment }}-{{ deploy_slot }}-legacy-site.priority=100"
+      - "traefik.http.routers.secundor-{{ deploy_environment }}-{{ deploy_slot }}-legacy-site.middlewares=secundor-{{ deploy_environment }}-{{ deploy_slot }}-rename"
+      - "traefik.http.middlewares.secundor-{{ deploy_environment }}-{{ deploy_slot }}-rename.redirectregex.regex=^https://[^/]+/(.*)"
+      - "traefik.http.middlewares.secundor-{{ deploy_environment }}-{{ deploy_slot }}-rename.redirectregex.replacement=https://{{ app_cfg.hostname }}/$${1}"
+      - "traefik.http.middlewares.secundor-{{ deploy_environment }}-{{ deploy_slot }}-rename.redirectregex.permanent=true"
+{% endif %}
+
+    ports:
+      - "127.0.0.1:{{ local_healthcheck_port }}:{{ app_internal_port }}"
+
+    networks:
+      - proxy-net
+      - db-net
+
+    restart: unless-stopped
+
+networks:
+  proxy-net:
+    external: true
+  db-net:
+    external: true

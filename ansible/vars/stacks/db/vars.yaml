@@ -32,10 +32,10 @@ postgres_app_tenants:
     db_schema: "public"
     backup: true
 
-  - app_id: "eonkeep"
+  - app_id: "secundor"
     environment: "prod"
-    db_name: "eonkeep"
-    db_user: "eonkeep_prod"
+    db_name: "secundor"
+    db_user: "secundor_prod"
     db_schema: "public"
     backup: true
 

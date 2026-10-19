@@ -1,11 +1,11 @@
-- name: Deploy EonKeep sync server
+- name: Deploy Secundor sync server
   hosts: almonium
   gather_facts: false
 
   vars:
     # deploy_environment, deploy_image_tag, deploy_gh_actor, deploy_gh_token come from CI.
     infra_root: "/home/almonium/infra"
-    project_name_base: "eonkeep"
+    project_name_base: "secundor"
     app_internal_port: "8080"
 
   pre_tasks:
@@ -13,26 +13,26 @@
       ansible.builtin.assert:
         that:
           - deploy_environment == "prod"
-        fail_msg: "eonkeep only supports the prod environment"
+        fail_msg: "secundor only supports the prod environment"
 
-    - name: Load EonKeep app vars
+    - name: Load Secundor app vars
       ansible.builtin.include_vars:
-        name: eonkeep
-        file: "{{ playbook_dir }}/vars/apps/eonkeep/vars.yaml"
+        name: secundor
+        file: "{{ playbook_dir }}/vars/apps/secundor/vars.yaml"
 
-    - name: Load EonKeep prod secrets
+    - name: Load Secundor prod secrets
       ansible.builtin.include_vars:
-        name: eonkeep_env
-        file: "{{ playbook_dir }}/vars/apps/eonkeep/vault.prod.yaml"
+        name: secundor_env
+        file: "{{ playbook_dir }}/vars/apps/secundor/vault.prod.yaml"
 
     - name: Select deployment config
       ansible.builtin.set_fact:
-        app_cfg: "{{ eonkeep.deployments[deploy_environment] }}"
+        app_cfg: "{{ secundor.deployments[deploy_environment] }}"
 
   tasks:
     - name: Determine color file path
       ansible.builtin.set_fact:
-        color_file_path: "{{ infra_root }}/.next_color_{{ deploy_environment }}_eonkeep"
+        color_file_path: "{{ infra_root }}/.next_color_{{ deploy_environment }}_secundor"
         docker_compose_project_name: "{{ project_name_base }}_{{ deploy_environment }}"
 
     - name: Read current color for the environment
@@ -40,6 +40,20 @@
         src: "{{ color_file_path }}"
       register: color_file_content
       failed_when: false
+
+    # Before the rename the app ran as eonkeep_<env>_<slot>. The first Secundor deploy
+    # continues that color sequence so it starts on the port slot the old one left free.
+    - name: Read the pre-rename color
+      ansible.builtin.slurp:
+        src: "{{ infra_root }}/.next_color_{{ deploy_environment }}_eonkeep"
+      register: legacy_color_file_content
+      failed_when: false
+      when: color_file_content.content is not defined
+
+    - name: Continue from the pre-rename color
+      ansible.builtin.set_fact:
+        color_file_content: "{{ legacy_color_file_content }}"
+      when: legacy_color_file_content.content is defined
 
     - name: Choose target and previous slots
       ansible.builtin.set_fact:
@@ -60,13 +74,20 @@
 
     - name: Deploy target slot
       ansible.builtin.import_role:
-        name: deploy_eonkeep_slot
+        name: deploy_secundor_slot
 
     - name: Stop and remove previous slot
       ansible.builtin.command: >-
-        docker rm -f eonkeep_{{ deploy_environment }}_{{ previous_slot }}
+        docker rm -f secundor_{{ deploy_environment }}_{{ previous_slot }}
       register: stop_previous_result
       changed_when: stop_previous_result.rc == 0
+      failed_when: false
+
+    - name: Remove containers from before the rename
+      ansible.builtin.command: >-
+        docker rm -f eonkeep_{{ deploy_environment }}_blue eonkeep_{{ deploy_environment }}_green
+      register: stop_legacy_result
+      changed_when: "'eonkeep_' in stop_legacy_result.stdout"
       failed_when: false
 
     - name: Update color file to point to next slot
@@ -78,4 +99,4 @@
 
     - name: Deployment summary
       ansible.builtin.debug:
-        msg: "EonKeep {{ deploy_environment }} switched to {{ deploy_slot }} on {{ app_cfg.hostname }}"
+        msg: "Secundor {{ deploy_environment }} switched to {{ deploy_slot }} on {{ app_cfg.hostname }}"

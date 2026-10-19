@@ -1,6 +1,6 @@
 - name: Ensure the downloads directory exists
   ansible.builtin.file:
-    path: "{{ eonkeep.shared.downloads_dir }}"
+    path: "{{ secundor.shared.downloads_dir }}"
     state: directory
     owner: almonium
     group: almonium
@@ -26,7 +26,7 @@
 
 - name: Pull Docker image
   community.docker.docker_image:
-    name: "{{ eonkeep.shared.image }}:{{ deploy_image_tag }}"
+    name: "{{ secundor.shared.image }}:{{ deploy_image_tag }}"
     source: pull
   register: pull_result
   retries: 3

@@ -1,0 +1,19 @@
+# Secundor: optional end-to-end encrypted sync/backup API plus the public site.
+# The server stores only ciphertext; see ../../../../secundor/server.
+shared:
+  image: "ghcr.io/okuzan/secundor-server"
+  keep_versions: "30"
+  max_blob_bytes: "2097152"
+  # Desktop builds served at /downloads, written by playbook-publish-secundor-desktop.yaml.
+  downloads_dir: "/home/almonium/secundor/downloads"
+  keep_releases: 3
+
+deployments:
+  prod:
+    hostname: "secundor.almonium.com"
+    # The project's former name. Installed EonKeep builds still sync against and fetch
+    # updates from it, so /api and /downloads stay served there; pages redirect.
+    legacy_hostname: "eonkeep.almonium.com"
+    db:
+      name: "secundor"
+      username: "secundor_prod"

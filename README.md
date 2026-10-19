@@ -14,7 +14,7 @@ GitHub Actions triggers the relevant deployment playbooks.
 | --- | --- |
 | Edge | Traefik, HTTPS certificates via Porkbun DNS-01 |
 | Shared application services | PostgreSQL with PgBouncer, RabbitMQ |
-| Applications | Almonium (prod and staging), Almonium Books (prod and staging), FamSub, EonKeep sync |
+| Applications | Almonium (prod and staging), Almonium Books (prod and staging), FamSub, Secundor sync |
 | Frontends and static sites | Almonium FE, FamSub FE, TG Voices, Cosmos |
 | Personal services | Emby and Syncthing |
 
@@ -53,10 +53,13 @@ nginx-configs/          Shared frontend Nginx configuration
   credentials.
 - **Media Stack** and **TG Voices** first update the server checkout, then run
   Docker Compose. They do not rely on the separate sync workflow winning a race.
-- **EonKeep** (`eonkeep.almonium.com`) is one container serving the public site
-  and the optional sync API. Clients encrypt before upload, so its database holds
-  only ciphertext. The EonKeep repository's CI builds the ARM64 image and runs
-  `ansible/playbook-deploy-eonkeep.yaml` (blue/green on local ports 8891/8892).
+- **Secundor** (`secundor.almonium.com`) is one container serving the public site,
+  the optional sync API and the desktop downloads. Clients encrypt before upload,
+  so its database holds only ciphertext. The Secundor repository's CI builds the
+  ARM64 image and runs `ansible/playbook-deploy-secundor.yaml` (blue/green on local
+  ports 8891/8892). The project was called EonKeep before. `eonkeep.almonium.com`
+  still serves `/api` and `/downloads` for builds installed under that name, and
+  its other pages redirect.
 - **Cosmos** (`cosmos.almonium.com`) is a private reader for a personal
   transcript collection, behind an access code; it also transcribes new
   YouTube episodes through Groq. The cosmos repository's `deploy.sh` copies its
@@ -253,7 +256,7 @@ Vault IDs and their encrypted files are:
 | `almonium_staging` | `ansible/vars/apps/almonium/vault.staging.yaml` |
 | `almonium_shared` | `ansible/vars/apps/almonium/vault.shared.yaml` |
 | `fam_sub_prod` | `ansible/vars/apps/fam_sub/vault.prod.yaml` |
-| `eonkeep_prod` | `ansible/vars/apps/eonkeep/vault.prod.yaml` |
+| `secundor_prod` | `ansible/vars/apps/secundor/vault.prod.yaml` |
 | `db` | `ansible/vars/stacks/db/vault.yaml` |
 | `rabbitmq` | `ansible/vars/stacks/rabbitmq/vault.yaml` |
 

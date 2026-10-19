@@ -4,7 +4,7 @@ postgres_tenant_passwords:
   "almonium:prod": ""
   "almonium:staging": ""
   "fam_sub:prod": ""
-  "eonkeep:prod": ""
+  "secundor:prod": ""
   "almonium_books:prod": ""
   "almonium_books:staging": ""
 
