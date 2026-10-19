@@ -74,3 +74,10 @@ postgres_reader_grants:
     db_name: "almonium_staging"
     db_schema: "lexicon"
     schema_owner: "almonium_staging"
+
+# Login for Alloy's Postgres collector (monitoring stack). It holds pg_monitor,
+# which reads server statistics and database sizes but no table data, and it
+# connects only to the maintenance database `postgres`. The password lives in
+# the DB vault as postgres_monitoring_password and, with the same value, in the
+# monitoring vault as monitoring_postgres_password.
+postgres_monitoring_role: "monitoring"

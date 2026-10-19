@@ -89,6 +89,16 @@
   loop_control:
     label: "{{ item.reader_id }}:{{ item.environment }}"
 
+- name: Validate PostgreSQL monitoring role declaration
+  assert:
+    that:
+      - postgres_monitoring_role is defined
+      - postgres_monitoring_role is match('^[A-Za-z0-9_]+$')
+      - postgres_monitoring_role not in (postgres_app_tenants | map(attribute='db_user') | list)
+      - postgres_monitoring_password is defined
+      - (postgres_monitoring_password | string | length) > 0
+    fail_msg: "postgres_monitoring_role must be a non-tenant role and postgres_monitoring_password must be in the DB vault."
+
 - name: Validate B2 backup configuration
   ansible.builtin.assert:
     that:
@@ -331,3 +341,32 @@
   loop: "{{ postgres_reader_grants | default([]) }}"
   loop_control:
     label: "{{ item.reader_id }}:{{ item.environment }}"
+
+- name: Ensure the monitoring role exists, holds pg_monitor, and its password is current
+  shell: |
+    docker exec postgres psql -U {{ db_admin_user | default('postgres') }} -v ON_ERROR_STOP=1 -c "
+    DO \$\$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_roles WHERE rolname='{{ postgres_monitoring_role }}'
+      ) THEN
+        EXECUTE format(
+          'CREATE ROLE %I LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT PASSWORD %L',
+          '{{ postgres_monitoring_role }}',
+          '{{ postgres_monitoring_password | replace("'", "''") }}'
+        );
+      ELSE
+        EXECUTE format(
+          'ALTER ROLE %I LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT PASSWORD %L',
+          '{{ postgres_monitoring_role }}',
+          '{{ postgres_monitoring_password | replace("'", "''") }}'
+        );
+      END IF;
+    END
+    \$\$;
+    GRANT pg_monitor TO {{ postgres_monitoring_role }};
+    ALTER ROLE {{ postgres_monitoring_role }} SET default_transaction_read_only = on;
+    ALTER ROLE {{ postgres_monitoring_role }} CONNECTION LIMIT 3;
+    "
+  changed_when: false
+  no_log: true

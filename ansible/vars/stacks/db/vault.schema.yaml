@@ -17,3 +17,5 @@ db_backup:
   b2:
     application_key_id: ""
     application_key: ""
+
+postgres_monitoring_password: ""
