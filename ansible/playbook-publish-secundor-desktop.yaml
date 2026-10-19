@@ -30,7 +30,7 @@
         src: "{{ item }}"
         dest: "{{ secundor.shared.downloads_dir }}/"
         mode: "0644"
-      loop: "{{ query('fileglob', release_src ~ '/*.deb') + query('fileglob', release_src ~ '/*.AppImage') + query('fileglob', release_src ~ '/*.dmg') + query('fileglob', release_src ~ '/*.app.tar.gz') }}"
+      loop: "{{ query('fileglob', release_src ~ '/*.deb') + query('fileglob', release_src ~ '/*.AppImage') + query('fileglob', release_src ~ '/*.dmg') + query('fileglob', release_src ~ '/*.app.tar.gz') + query('fileglob', release_src ~ '/*-setup.exe') }}"
 
     # Written last so the site never links to a file that isn't there yet.
     - name: Publish the manifest
@@ -50,14 +50,15 @@
     - name: Find published bundles
       ansible.builtin.find:
         paths: "{{ secundor.shared.downloads_dir }}"
-        patterns: ["*.deb", "*.AppImage", "*.dmg", "*.app.tar.gz"]
+        patterns: ["*.deb", "*.AppImage", "*.dmg", "*.app.tar.gz", "*-setup.exe"]
       register: bundles
 
-    # Up to four bundles per release: deb, AppImage, dmg and the macOS update archive.
+    # Up to five bundles per release: deb, AppImage, dmg, the macOS update archive and the
+    # Windows installer.
     - name: Keep only the newest releases
       ansible.builtin.file:
         path: "{{ item.path }}"
         state: absent
-      loop: "{{ (bundles.files | sort(attribute='mtime', reverse=true))[secundor.shared.keep_releases * 4:] }}"
+      loop: "{{ (bundles.files | sort(attribute='mtime', reverse=true))[secundor.shared.keep_releases * 5:] }}"
       loop_control:
         label: "{{ item.path | basename }}"
