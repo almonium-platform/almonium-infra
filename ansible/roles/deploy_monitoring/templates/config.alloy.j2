@@ -292,6 +292,10 @@ loki.source.docker "containers" {
 loki.process "containers" {
   forward_to = [loki.write.cloud.receiver]
 
+  // The backend's logback pattern colours its output; strip the escape codes
+  // so the lines read cleanly and the patterns below can match them.
+  stage.decolorize {}
+
   // Spring prints a stack trace across several lines; keep it with its entry.
   stage.match {
     selector = "{app=\"almonium\"}"
