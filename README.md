@@ -169,7 +169,11 @@ an upsert, and resources stay editable in the UI; export UI edits back here):
   PostgreSQL down; warning: error logs, OOM kills, crash loops, heap, DB pool
   waits, dead letters, backlog, missing consumers, RabbitMQ alarms, TLS expiry,
   staging down, PostgreSQL connections, long transactions, deadlocks), sent
-  by email to tech@almonium.com (critical repeats every 2 h, warnings 12 h).
+  by email to tech@almonium.com (critical repeats every 2 h, warnings 12 h). A rule
+  whose query fails keeps its last state (`execErrState: KeepLast`): Grafana
+  Cloud's own query path sometimes times out, and alerting on that mailed a
+  DatasourceError for every flap. The "Host telemetry stopped" rule still
+  catches data that genuinely stops arriving.
 
 Synthetic Monitoring probes the public URLs from Frankfurt (and London for the
 production API): `api`, `almonium.com`, `books` and the staging API, about

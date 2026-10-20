@@ -9,7 +9,7 @@
       "condition": "C",
       "for": "3m",
       "noDataState": "Alerting",
-      "execErrState": "Error",
+      "execErrState": "KeepLast",
       "labels": {
         "severity": "critical",
         "project": "almonium"
@@ -71,7 +71,7 @@
       "condition": "C",
       "for": "5m",
       "noDataState": "OK",
-      "execErrState": "Error",
+      "execErrState": "KeepLast",
       "labels": {
         "severity": "critical",
         "project": "almonium"
@@ -133,7 +133,7 @@
       "condition": "C",
       "for": "10m",
       "noDataState": "Alerting",
-      "execErrState": "Error",
+      "execErrState": "KeepLast",
       "labels": {
         "severity": "critical",
         "project": "almonium"
@@ -195,7 +195,7 @@
       "condition": "C",
       "for": "5m",
       "noDataState": "OK",
-      "execErrState": "Error",
+      "execErrState": "KeepLast",
       "labels": {
         "severity": "critical",
         "project": "almonium"
@@ -257,7 +257,7 @@
       "condition": "C",
       "for": "10m",
       "noDataState": "OK",
-      "execErrState": "Error",
+      "execErrState": "KeepLast",
       "labels": {
         "severity": "critical",
         "project": "almonium"
@@ -319,7 +319,7 @@
       "condition": "C",
       "for": "10m",
       "noDataState": "OK",
-      "execErrState": "Error",
+      "execErrState": "KeepLast",
       "labels": {
         "severity": "critical",
         "project": "almonium"
@@ -381,7 +381,7 @@
       "condition": "C",
       "for": "3m",
       "noDataState": "Alerting",
-      "execErrState": "Error",
+      "execErrState": "KeepLast",
       "labels": {
         "severity": "critical",
         "project": "almonium"
