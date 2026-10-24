@@ -13,7 +13,7 @@ x-books-environment: &books-environment
   HF_HOME: "/app/models"
   OPENAI_API_KEY: {{ almonium_shared.openai_key | default('') | to_json }}
   ALMONIUM_API_URL: {{ app_cfg.almonium_api_url | to_json }}
-  ALMONIUM_BOOKS_PUBLISHER_TOKEN: {{ almonium_shared.books.publisher_secret | to_json }}
+  ALMONIUM_BOOKS_PUBLISHER_SECRET: {{ almonium_shared.books.publisher_secret | to_json }}
   # Edition promotion: what this environment accepts, and where it may push.
   ALMONIUM_BOOKS_PROMOTION_TOKEN: {{ almonium_shared.books.promotion_secrets[deploy_environment] | to_json }}
 {% set promotion_targets = [] %}
