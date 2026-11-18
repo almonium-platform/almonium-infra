@@ -1,9 +1,9 @@
 shared:
   internal_port: "8000"
   embedding_model: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-  # The GPU the Modal embeddings app (book processor modal_apps/embeddings.py) is deployed
-  # with; the worker prices runs from it.
-  modal_embedding_gpu: "L4"
+  # The GPUs the Modal embeddings app (book processor modal_apps/embeddings.py) is deployed
+  # with, in its order of preference; the worker prices each call at the card that ran it.
+  modal_embedding_gpus: "L4,A10,L40S"
 
 deployments:
   prod:

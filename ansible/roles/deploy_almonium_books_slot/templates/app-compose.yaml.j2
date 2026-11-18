@@ -12,7 +12,7 @@ x-books-environment: &books-environment
   NLP_EMBEDDING_MODEL: {{ books.shared.embedding_model | to_json }}
   HF_HOME: "/app/models"
   NLP_EMBEDDING_BACKEND: {{ app_cfg.embedding_backend | default('local') | to_json }}
-  MODAL_EMBEDDING_GPU: {{ books.shared.modal_embedding_gpu | to_json }}
+  MODAL_EMBEDDING_GPUS: {{ books.shared.modal_embedding_gpus | to_json }}
   MODAL_TOKEN_ID: {{ almonium_shared.books.modal.token_id | default('') | to_json }}
   MODAL_TOKEN_SECRET: {{ almonium_shared.books.modal.token_secret | default('') | to_json }}
   OPENAI_API_KEY: {{ almonium_shared.openai_key | default('') | to_json }}
