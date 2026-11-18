@@ -99,7 +99,11 @@ services:
       - --concurrency=1
       - --queues=alignment
       - "--hostname=aligner@%h"
-    environment: *books-environment
+    environment:
+      <<: *books-environment
+      # This host also serves the backend and both environments: an alignment on its
+      # CPU must not take every core. Torch otherwise uses one thread per core.
+      NLP_EMBEDDING_THREADS: "2"
     volumes:
       - "{{ app_cfg.model_cache_root }}:/app/models"
     networks:
