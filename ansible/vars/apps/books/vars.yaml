@@ -12,8 +12,10 @@ deployments:
     # Production is the end of the line: nothing is promoted out of it.
     promotion_targets: []
     # "local" embeds on this host's CPU; "modal" sends public text to a Modal GPU
-    # (book processor docs/MODAL.md). Needs almonium_shared.books.modal in the vault.
-    embedding_backend: "local"
+    # (book processor docs/MODAL.md), with the token in almonium_shared.books.modal. Both
+    # environments share the workspace's free credits; each caps its own month at the
+    # processor's MODAL_MONTHLY_BUDGET_USD and Modal's $0 spend limit caps the sum.
+    embedding_backend: "modal"
     media_root: "/home/almonium/books/prod/media"
     model_cache_root: "/home/almonium/books/prod/models"
     db:
@@ -33,7 +35,7 @@ deployments:
     almonium_api_url: "https://staging.api.almonium.com/api/v1"
     # Reviewed editions reach production only through staging.
     promotion_targets: ["prod"]
-    embedding_backend: "local"
+    embedding_backend: "modal"
     media_root: "/home/almonium/books/staging/media"
     model_cache_root: "/home/almonium/books/staging/models"
     db:
