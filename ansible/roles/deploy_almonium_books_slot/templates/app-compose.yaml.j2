@@ -85,6 +85,28 @@ services:
       - db-net
     restart: unless-stopped
 
+  # Offline sentence alignment only (the processor's SENTENCE_ALIGNMENT_QUEUE,
+  # "alignment"): minutes per book, so it never holds the worker above.
+  aligner:
+    image: "{{ deploy_image_reference }}"
+    container_name: "almonium_books_aligner_{{ deploy_environment }}_{{ deploy_slot }}"
+    command:
+      - celery
+      - -A
+      - almonium_book_processor.config
+      - worker
+      - --loglevel=INFO
+      - --concurrency=1
+      - --queues=alignment
+      - "--hostname=aligner@%h"
+    environment: *books-environment
+    volumes:
+      - "{{ app_cfg.model_cache_root }}:/app/models"
+    networks:
+      - broker-net
+      - db-net
+    restart: unless-stopped
+
 networks:
   proxy-net:
     external: true

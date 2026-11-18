@@ -157,6 +157,12 @@
         state: absent
       when: previous_slot != deploy_slot
 
+    - name: Remove previous aligner container
+      community.docker.docker_container:
+        name: "almonium_books_aligner_{{ deploy_environment }}_{{ previous_slot }}"
+        state: absent
+      when: previous_slot != deploy_slot
+
     - name: Record next deployment slot
       ansible.builtin.copy:
         content: "{{ 'green' if deploy_slot == 'blue' else 'blue' }}"
