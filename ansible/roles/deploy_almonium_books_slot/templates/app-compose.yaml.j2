@@ -11,6 +11,10 @@ x-books-environment: &books-environment
   MEDIA_ROOT: "/app/media"
   NLP_EMBEDDING_MODEL: {{ books.shared.embedding_model | to_json }}
   HF_HOME: "/app/models"
+  NLP_EMBEDDING_BACKEND: {{ app_cfg.embedding_backend | default('local') | to_json }}
+  MODAL_EMBEDDING_GPU: {{ books.shared.modal_embedding_gpu | to_json }}
+  MODAL_TOKEN_ID: {{ almonium_shared.books.modal.token_id | default('') | to_json }}
+  MODAL_TOKEN_SECRET: {{ almonium_shared.books.modal.token_secret | default('') | to_json }}
   OPENAI_API_KEY: {{ almonium_shared.openai_key | default('') | to_json }}
   ALMONIUM_API_URL: {{ app_cfg.almonium_api_url | to_json }}
   ALMONIUM_BOOKS_PUBLISHER_SECRET: {{ almonium_shared.books.publisher_secret | to_json }}

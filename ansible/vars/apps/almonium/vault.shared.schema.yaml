@@ -10,6 +10,11 @@ books:
   promotion_secrets:
     staging: ""
     prod: ""
+  # Modal workspace token for the books worker's GPU embeddings (NLP_EMBEDDING_BACKEND=modal).
+  # One workspace for both environments: the deployed app is stateless compute.
+  modal:
+    token_id: ""
+    token_secret: ""
 
 # Cloudflare R2 bucket almonium-audio, one bucket for both environments:
 # clips are immutable and keyed by content, so prod and staging share them.
